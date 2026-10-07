@@ -340,6 +340,7 @@ const state = {
   hidden: LS.get('hidden', []),
   liked: LS.get('liked', []),
   torQ: LS.get('tor_qmode','orig_ru_year'),
+  defPlayer: LS.get('def_player','ask'),
 };
 const VID_EXT = ['.mp4','.mkv','.avi','.ts','.m2ts','.webm','.mov','.mpg','.mpeg'];
 const plural=(n,a,b,c)=>{const m10=n%10,m100=n%100;return m10===1&&m100!==11?a:(m10>=2&&m10<=4&&(m100<12||m100>14)?b:c);};
@@ -1159,6 +1160,7 @@ function renderHist(){
 }
 
 /* ================= НАСТРОЙКИ ================= */
+function playerName(v){ return v==='vlc' ? 'VLC' : (v==='builtin' ? 'Встроенный' : 'Спрашивать'); }
 function renderSettings(){
   const box = $('#scr-settings');
   const row = (id,t,s,v)=>'<button class="set-row" data-id="'+id+'"><div><div class="set-row__t">'+t+'</div>'
@@ -1169,11 +1171,27 @@ function renderSettings(){
     + row('fx','Filmix токен','для источника Filmix 4k', state.fxToken)
     + '<div class="set-cap">Торренты</div>'
     + row('ts','TorrServer','адрес сервера, напр. http://192.168.1.5:8090', state.tsUrl)
+    + '<div class="set-cap">Плеер</div>'
+    + '<button class="set-row" data-id="player"><div><div class="set-row__t">Плеер по умолчанию</div>'
+    + '<div class="set-row__s">куда открывать видео</div></div><div class="val">'+escTx(playerName(state.defPlayer))+'</div></button>'
     + '<div class="set-cap">Приложение</div>'
     + '<div style="margin-bottom:1em;color:var(--muted)">Ключи общие с «Кино» — можно ввести в приложении на телефоне, здесь подтянутся сами.</div>'
     + '</div>';
   box.querySelectorAll('.set-row').forEach(b=>b.onclick=()=>{
     const id = b.dataset.id;
+    if(id==='player'){
+      openSheet('Плеер по умолчанию', [
+        {t:'Спрашивать', s:'выбор при каждом запуске'},
+        {t:'Встроенный', s:'плеер Пацюк Кино'},
+        {t:'VLC', s:'внешнее приложение'},
+      ], i=>{
+        state.defPlayer = ['ask','builtin','vlc'][i] || 'ask';
+        LS.set('def_player', state.defPlayer);
+        renderSettings();
+        toast('Сохранено');
+      });
+      return;
+    }
     const cur = {tmdb:state.tmdbKey, fx:state.fxToken, ts:state.tsUrl}[id] || '';
     askText({tmdb:'TMDB API-ключ', fx:'Filmix токен', ts:'Адрес TorrServer'}[id], cur, v=>{
       if(id==='tmdb'){ state.tmdbKey=v.trim(); LS.set('tmdb_key',state.tmdbKey); HOME.data=null; }
@@ -1405,13 +1423,19 @@ function vwSetSub(html){ const s = $('#vwSub'); if(s) s.innerHTML = html||''; }
 function vwSetQ(q){ const e = $('#vwQ'); if(!e) return; if(q){ e.style.display=''; e.textContent=q; } else e.style.display='none'; }
 
 /* --- выбор: внутренний плеер или VLC --- */
+function playUrl(url, title){
+  if(state.defPlayer==='builtin'){ openPlayer(url, title); return; }
+  openExternal(url, ()=>{ toast('VLC не открылся · включаю встроенный плеер'); openPlayer(url, title); });
+}
 function vwAskPlayer(url, title, subs, mv, info){
+  if(state.defPlayer==='vlc'){ playUrl(url, title); return; }
+  if(state.defPlayer==='builtin'){ openPlayer(url, title); return; }
   openSheet('Чем открыть?', [
     {t:'Встроенный плеер', s:'плеер Пацюк Кино'},
     {t:'VLC', s:'внешнее приложение'}
   ], i=>{
-    if(i===1) openExternal(url, ()=>{ toast('VLC не открылся · включаю встроенный плеер'); openPlayer(url, title, subs, mv, info); });
-    else openPlayer(url, title, subs, mv, info);
+    if(i===1) playUrl(url, title);
+    else openPlayer(url, title);
   });
 }
 
@@ -2279,7 +2303,7 @@ function vwTorRender(){
   let topIdx = -1, topScore = -1;
   arr.forEach(t=>{ const s = torScore(t); if(s>topScore){ topScore = s; topIdx = torCache.indexOf(t); } });
   const best = topIdx>=0 ? torCache[topIdx] : null;
-  vwSetWatch(best ? 'Лучшая раздача · VLC' : null, best ? ()=>playTorrent(best, m) : null);
+  vwSetWatch(best ? 'Лучшая раздача'+(state.defPlayer==='builtin' ? '' : ' · VLC') : null, best ? ()=>playTorrent(best, m) : null);
   vwSetSub(`${arr.length} ${plural(arr.length,'раздача','раздачи','раздач')}${torLastQ?` · <b>${escTx(torLastQ)}</b>`:''}`);
   const el = $('#vwList'); if(!el) return;
   el.innerHTML = `<div class="vw-list">` + arr.map(t=>{
@@ -2379,7 +2403,7 @@ async function playTorrent(t, m){
       await new Promise(r=>setTimeout(r,1500));
     }
   }catch(e){ /* ниже — прямой фолбэк */ }
-  if(files && files.length===1){ openExternal(tsStreamURL(ts, hash, files[0].id, t.Title)); return; }
+  if(files && files.length===1){ playUrl(tsStreamURL(ts, hash, files[0].id, t.Title), t.Title); return; }
   if(files && files.length>1){
     torSubsCache = subs;
     const sorted = files.slice().sort((a,b)=>b.size-a.size);
@@ -2391,13 +2415,13 @@ async function playTorrent(t, m){
         sorted.map(f=>`<button class="vw-voice" data-f="${f.id}"><span>${escTx(shortName(f.path))}<div class="vs">${fmtSize(f.size)}</div></span><span style="color:var(--muted);font-size:19px;flex:0 0 auto">›</span></button>`).join('') + '</div>';
       $('#vwToTor').onclick = ()=>vwTorRender();
       el.querySelectorAll('.vw-voice').forEach(x=>x.onclick=()=>{
-        openExternal(tsStreamURL(ts, hash, x.dataset.f, t.Title));
+        playUrl(tsStreamURL(ts, hash, x.dataset.f, t.Title), t.Title);
       });
       return;
     }
   }
   // Фолбэк без чтения API: стрим первого файла напрямую по magnet
-  openExternal(tsStreamURL(ts, t.MagnetUri, 1, t.Title));
+  playUrl(tsStreamURL(ts, t.MagnetUri, 1, t.Title), t.Title);
 }
 
 
