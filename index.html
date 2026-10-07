@@ -211,6 +211,10 @@ input.search-input::placeholder{color:var(--muted);font-weight:600}
 .pv-btn svg{width:1.4em;height:1.4em}
 .pv-btn.focused{box-shadow:0 0 0 .16em #fff;background:rgba(255,255,255,.25)}
 .pv-time{margin-left:auto;font-weight:700;color:#dfe6f5}
+#pvSeek{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) scale(.9);
+  font-size:2.2em;font-weight:800;color:#fff;background:rgba(0,0,0,.65);
+  padding:.4em 1em;border-radius:1em;opacity:0;transition:opacity .18s, transform .18s;pointer-events:none}
+#pvSeek.on{opacity:1;transform:translate(-50%,-50%) scale(1)}
 
 /* ---------- тост ---------- */
 #toast{position:fixed;left:50%;bottom:2.5em;transform:translateX(-50%) translateY(1em);
@@ -574,8 +578,7 @@ document.addEventListener('keydown', e=>{
   else if(k==='ArrowUp') navMove('up');
   else if(k==='ArrowDown') navMove('down');
   else if(k==='Enter' || k===' ') navClick();
-  else if(k==='Escape' || k==='Backspace' || k==='BrowserBack' || e.keyCode===461 || e.keyCode===10009){
-    if(inField && k==='Backspace') return;
+  else if(k==='Escape' || k==='Backspace' || k==='BrowserBack' || k==='GoBack' || e.keyCode===4 || e.keyCode===8 || e.keyCode===461 || e.keyCode===10009){
     navBack();
   }
 });
@@ -1199,6 +1202,8 @@ function openPlayer(url, title){
   if(!P || !v) return;
   $('#pvTitle').textContent = title || '';
   P.classList.add('on');
+  pvPushed = false;
+  try{ history.pushState({pv:1}, ''); pvPushed = true; }catch(e){}
   if(plHls){ try{plHls.destroy();}catch(e){} plHls = null; }
   try{ v.pause(); }catch(e){}
   v.removeAttribute('src'); v.load();
@@ -1221,6 +1226,7 @@ function buildPvBtns(){
     + '<button class="pv-btn" data-a="rw"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M11 17l-5-5 5-5M18 17l-5-5 5-5"/></svg></button>'
     + '<button class="pv-btn" data-a="play" id="pvPlayBtn">'+ICO.play+'</button>'
     + '<button class="pv-btn" data-a="ff"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M13 17l5-5-5-5M6 17l5-5-5-5"/></svg></button>'
+    + '<button class="pv-btn" data-a="full"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M8 21H5a2 2 0 0 1-2-2v-3M16 21h3a2 2 0 0 0 2-2v-3"/></svg></button>'
     + '<div class="pv-time" id="pvTime">0:00 / 0:00</div>';
   $('#pvRow').querySelectorAll('.pv-btn').forEach(b=>b.onclick=()=>pvAct(b.dataset.a));
   updPvPlay();
@@ -1236,8 +1242,15 @@ function pvAct(a){
   const v = $('#pvVideo');
   if(a==='back') closePlayer();
   else if(a==='play'){ v.paused ? v.play().catch(()=>{}) : v.pause(); }
-  else if(a==='rw'){ v.currentTime = Math.max(0, v.currentTime-10); }
-  else if(a==='ff'){ try{ v.currentTime = Math.min(v.duration||0, v.currentTime+10); }catch(e){} }
+  else if(a==='rw'){ try{ v.currentTime = Math.max(0, v.currentTime-10); }catch(e){} pvSeekFeed('−10 сек'); }
+  else if(a==='ff'){
+    try{
+      const mx = (v.seekable && v.seekable.length) ? v.seekable.end(v.seekable.length-1) : (v.duration||0);
+      v.currentTime = Math.min(mx, v.currentTime+10);
+    }catch(e){}
+    pvSeekFeed('+10 сек');
+  }
+  else if(a==='full'){ pvToggleFull(); return; }
   pvShowUI();
 }
 function pvShowUI(){
@@ -1258,22 +1271,64 @@ function pvTick(){
   if(tm) tm.textContent = f(v.currentTime)+' / '+f(v.duration);
 }
 function closePlayer(){
-  const v = $('#pvVideo');
+  const P = $('#player'), v = $('#pvVideo');
   try{ v.pause(); }catch(e){}
   if(plHls){ try{plHls.destroy();}catch(e){} plHls = null; }
-  $('#player').classList.remove('on','showui');
+  P.classList.remove('on','showui');
+  if(document.activeElement && P.contains(document.activeElement)){ try{document.activeElement.blur();}catch(e){} }
+  if(pvPushed){ pvPushed = false; try{ history.back(); }catch(e){} }
 }
+let pvPushed = false;
+window.addEventListener('popstate', ()=>{
+  if($('#player').classList.contains('on')){ pvPushed = false; closePlayer(); }
+});
 /* клавиши в плеере — перехватываем до навигации (capture) */
+function pvBtnMove(dir){
+  const btns = [...document.querySelectorAll('#player.on .pv-btn')];
+  const i = btns.indexOf(document.activeElement);
+  const n = dir==='left' ? i-1 : i+1;
+  if(n>=0 && n<btns.length) navFocus(btns[n]);
+  else if(document.activeElement) try{document.activeElement.blur();}catch(e){}
+}
+let pvSeekT = null;
+function pvSeekFeed(txt){
+  const P = $('#player');
+  let el = $('#pvSeek');
+  if(!el){ el = document.createElement('div'); el.id = 'pvSeek'; P.appendChild(el); }
+  el.textContent = txt;
+  el.classList.add('on');
+  clearTimeout(pvSeekT);
+  pvSeekT = setTimeout(()=>el.classList.remove('on'), 900);
+}
+function pvToggleFull(){
+  try{
+    if(document.fullscreenElement || document.webkitFullscreenElement){
+      if(document.exitFullscreen) document.exitFullscreen().catch(()=>{});
+      else if(document.webkitExitFullscreen) document.webkitExitFullscreen();
+    } else {
+      const el = document.documentElement;
+      const p = el.requestFullscreen ? el.requestFullscreen()
+        : (el.webkitRequestFullscreen ? el.webkitRequestFullscreen() : null);
+      if(p && p.catch) p.catch(()=>toast('Во весь экран не вышло 😕'));
+    }
+  }catch(e){}
+  pvShowUI();
+}
 document.addEventListener('keydown', e=>{
-  if(!$('#player').classList.contains('on')) return;
+  const P = $('#player');
+  if(!P.classList.contains('on')) return;
+  const k = e.key, kc = e.keyCode || e.which || 0;
+  const ae = document.activeElement;
+  const onBtn = ae && ae.classList && ae.classList.contains('pv-btn') && P.contains(ae);
+  const isBack = k==='Escape' || k==='BrowserBack' || k==='GoBack' || kc===4 || kc===8 || kc===461 || kc===10009;
+  if(isBack){ e.preventDefault(); e.stopPropagation(); closePlayer(); return; }
+  if((k==='Enter'||kc===13||k===' '||kc===32) && onBtn) return; /* фокус на кнопке — пусть сработает её клик */
   e.stopPropagation();
-  const k = e.key;
-  if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Enter',' '].indexOf(k)!==-1) e.preventDefault();
-  if(k==='ArrowLeft'){ pvAct('rw'); }
-  else if(k==='ArrowRight'){ pvAct('ff'); }
-  else if(k==='ArrowUp' || k==='ArrowDown'){ pvShowUI(); }
-  else if(k==='Enter' || k===' '){ pvAct('play'); }
-  else if(k==='Escape' || e.keyCode===461 || e.keyCode===10009){ closePlayer(); }
+  if(kc===37 || k==='ArrowLeft'){ e.preventDefault(); onBtn ? pvBtnMove('left') : pvAct('rw'); }
+  else if(kc===39 || k==='ArrowRight'){ e.preventDefault(); onBtn ? pvBtnMove('right') : pvAct('ff'); }
+  else if(kc===38 || k==='ArrowUp'){ e.preventDefault(); pvShowUI(); if(!onBtn){ const b=P.querySelector('.pv-btn'); if(b) navFocus(b); } }
+  else if(kc===40 || k==='ArrowDown'){ e.preventDefault(); pvShowUI(); if(onBtn && ae) try{ae.blur();}catch(_){} }
+  else if(k==='Enter' || kc===13 || k===' ' || kc===32){ e.preventDefault(); pvAct('play'); }
 }, true);
 
 /* ================= BOOT ================= */
