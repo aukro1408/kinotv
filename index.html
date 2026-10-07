@@ -110,8 +110,8 @@ img{display:block}
 .card__badge--bell{background:rgba(0,0,0,.72);color:#fff}
 /* плашки стримингов */
 .studio-tile{flex:0 0 auto;min-width:10.5em;padding:1.15em 1.2em;border-radius:.8em;
-  background:var(--stbg,var(--card));border:1px solid var(--line);
-  font-weight:800;font-size:1.02em;color:var(--stc,#fff);text-align:center;
+  background:#fff;border:1px solid var(--line);
+  font-weight:800;font-size:1.02em;color:var(--stc,#101014);text-align:center;
   transition:transform .16s ease}
 .studio-tile.focused{transform:scale(1.06);box-shadow:0 0 0 .16em #fff}
 /* карточки коллекций */
@@ -678,16 +678,16 @@ function themeURL(t, page){
     ? `/discover/movie?sort_by=popularity.desc&with_keywords=${t.kw}&vote_count.gte=20${pg}`
     : `/discover/movie?sort_by=primary_release_date.desc&with_watch_providers=${t.prov}&watch_region=UA&region=UA&primary_release_date.lte=${todayStr()}&vote_count.gte=3${pg}`;
 }
-/* Стриминги — лёгкие текстовые плашки */
+/* Стриминги — белые плашки (как в мобильной версии: тёмные недопустимы) */
 const STUDIOS_MINI = [
   {id:'netflix', name:'Netflix', color:'#E50914', mv:{prov:'8',region:'UA'}, tv:{net:'213'}},
-  {id:'apple', name:'Apple TV+', color:'#f5f5f7', bg:'#000000', mv:{prov:'350',region:'UA'}, tv:{net:'2552'}},
-  {id:'amazon', name:'Prime Video', color:'#00A8E1', mv:{co:'210099'}, tv:{net:'1024'}},
+  {id:'apple', name:'Apple TV+', color:'#000000', mv:{prov:'350',region:'UA'}, tv:{net:'2552'}},
+  {id:'amazon', name:'Prime Video', color:'#0090c8', mv:{co:'210099'}, tv:{net:'1024'}},
   {id:'disney', name:'Disney+', color:'#113CCF', mv:{co:'2'}, tv:{net:'2739'}},
-  {id:'hbo', name:'HBO', color:'#ffffff', bg:'#000000', mv:{co:'174'}, tv:{net:'49'}},
+  {id:'hbo', name:'HBO', color:'#000000', mv:{co:'174'}, tv:{net:'49'}},
   {id:'paramount', name:'Paramount+', color:'#0064FF', mv:{co:'4'}, tv:{net:'4330'}},
-  {id:'skyshow', name:'SkyShowtime', color:'#ffffff', bg:'#101014', mv:{co:'4|33|521'}, tv:{co:'67|115331'}},
-  {id:'hulu', name:'hulu', color:'#1CE783', mv:{prov:'15',region:'US'}, tv:{net:'453'}},
+  {id:'skyshow', name:'SkyShowtime', color:'#101014', mv:{co:'4|33|521'}, tv:{co:'67|115331'}},
+  {id:'hulu', name:'hulu', color:'#0e9f5c', mv:{prov:'15',region:'US'}, tv:{net:'453'}},
   {id:'syfy', name:'SYFY', color:'#101014', mv:null, tv:{net:'77'}},
 ];
 function studioURL(st, media, page){
@@ -819,7 +819,7 @@ function secHTML(title, items, catKey, cardFn){
 function studiosRowHTML(){
   return `<div class="row"><div class="row__head"><div class="row__title">Стриминги</div></div>`
     + `<div class="row__line">` + STUDIOS_MINI.map((s,i)=>
-      `<button class="studio-tile" data-st="${i}" tabindex="0" style="--stc:${s.color};${s.bg?`--stbg:${s.bg};`:''}"><span>${escTx(s.name)}</span></button>`
+      `<button class="studio-tile" data-st="${i}" tabindex="0" style="--stc:${s.color}"><span>${escTx(s.name)}</span></button>`
     ).join('') + `</div></div>`;
 }
 async function renderHome(){
