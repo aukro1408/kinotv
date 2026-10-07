@@ -1180,12 +1180,13 @@ function renderSettings(){
   box.querySelectorAll('.set-row').forEach(b=>b.onclick=()=>{
     const id = b.dataset.id;
     if(id==='player'){
-      openSheet('Плеер по умолчанию', [
-        {t:'Спрашивать', s:'выбор при каждом запуске'},
-        {t:'Встроенный', s:'плеер Пацюк Кино'},
-        {t:'VLC', s:'внешнее приложение'},
-      ], i=>{
-        state.defPlayer = ['ask','builtin','vlc'][i] || 'ask';
+      const opts = [
+        {t:'Спрашивать', s:'выбор при каждом запуске', v:'ask'},
+        {t:'Встроенный', s:'плеер Пацюк Кино', v:'builtin'},
+      ];
+      if(canVlc()) opts.push({t:'VLC', s:'внешнее приложение', v:'vlc'});
+      openSheet('Плеер по умолчанию', opts, i=>{
+        state.defPlayer = (opts[i] && opts[i].v) || 'ask';
         LS.set('def_player', state.defPlayer);
         renderSettings();
         toast('Сохранено');
@@ -1424,10 +1425,14 @@ function vwSetQ(q){ const e = $('#vwQ'); if(!e) return; if(q){ e.style.display='
 
 /* --- выбор: внутренний плеер или VLC --- */
 function playUrl(url, title){
-  if(state.defPlayer==='builtin'){ openPlayer(url, title); return; }
+  if(state.defPlayer==='builtin' || !canVlc()){
+    if(state.defPlayer==='vlc' && !canVlc()) toast('В этом браузере VLC недоступен · включаю встроенный плеер');
+    openPlayer(url, title); return;
+  }
   vlcLaunch(url);
 }
 function vwAskPlayer(url, title, subs, mv, info){
+  if(!canVlc()){ openPlayer(url, title); return; }
   if(state.defPlayer==='vlc'){ playUrl(url, title); return; }
   if(state.defPlayer==='builtin'){ openPlayer(url, title); return; }
   openSheet('Чем открыть?', [
@@ -2303,7 +2308,7 @@ function vwTorRender(){
   let topIdx = -1, topScore = -1;
   arr.forEach(t=>{ const s = torScore(t); if(s>topScore){ topScore = s; topIdx = torCache.indexOf(t); } });
   const best = topIdx>=0 ? torCache[topIdx] : null;
-  vwSetWatch(best ? 'Лучшая раздача'+(state.defPlayer==='builtin' ? '' : ' · VLC') : null, best ? ()=>playTorrentNow(best, m) : null);
+  vwSetWatch(best ? 'Лучшая раздача'+(canVlc() && state.defPlayer!=='builtin' ? ' · VLC' : '') : null, best ? ()=>playTorrentNow(best, m) : null);
   vwSetSub(`${arr.length} ${plural(arr.length,'раздача','раздачи','раздач')}${torLastQ?` · <b>${escTx(torLastQ)}</b>`:''}`);
   const el = $('#vwList'); if(!el) return;
   el.innerHTML = `<div class="vw-list">` + arr.map(t=>{
@@ -2350,6 +2355,13 @@ function vlcIntent(u){
       '#Intent;action=android.intent.action.VIEW;scheme=' + p.protocol.replace(':','') +
       ';type=video/*;package=org.videolan.vlc;end';
   }catch(e){ return null; }
+}
+/* VLC возможен только там, где браузер умеет intent:// — на Android
+   (MiBox и др.). Встроенный браузер Philips (Vewd/Opera TV) — не Android:
+   intent:// там даёт ERR_UNKNOWN_URL_SCHEME и роняет страницу, поэтому
+   на нём сразу используем встроенный плеер. */
+function canVlc(){
+  try{ return /Android/i.test(navigator.userAgent||''); }catch(e){ return false; }
 }
 /* Запуск VLC — как у Lampa: прямой переход по intent://.
    Важно: вызывать СИНХРОННО в обработчике клика — без жеста пользователя
@@ -2416,8 +2428,7 @@ function playTorrentNow(t, m){
   const ts = tsBase();
   const url = tsStreamURL(ts, t.MagnetUri, 1, t.Title);
   const title = (m && (m.title || m.name)) || t.Title || 'Торрент';
-  if(state.defPlayer==='builtin'){ openPlayer(url, title); return; }
-  vlcLaunch(url);
+  playUrl(url, title);
 }
 
 
