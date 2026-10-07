@@ -1426,6 +1426,8 @@ function vwSetQ(q){ const e = $('#vwQ'); if(!e) return; if(q){ e.style.display='
 /* --- выбор: внутренний плеер или VLC --- */
 function playUrl(url, title){
   if(state.defPlayer!=='builtin'){
+    const NB = nativeBridge();
+    if(NB){ try{ NB.openVlc(url); return; }catch(e){} }
     const And = lampaBridge();
     if(And){
       try{ And.openPlayer(url, {url:url, title:title||''}); return; }
@@ -1433,7 +1435,7 @@ function playUrl(url, title){
     }
   }
   if(state.defPlayer==='builtin' || !canVlc()){
-    if(state.defPlayer==='vlc' && !canVlc() && !lampaBridge()) toast('В этом браузере VLC недоступен · включаю встроенный плеер');
+    if(state.defPlayer==='vlc' && !canVlc() && !nativeBridge() && !lampaBridge()) toast('В этом браузере VLC недоступен · включаю встроенный плеер');
     openPlayer(url, title); return;
   }
   vlcLaunch(url);
@@ -2316,7 +2318,7 @@ function vwTorRender(){
   let topIdx = -1, topScore = -1;
   arr.forEach(t=>{ const s = torScore(t); if(s>topScore){ topScore = s; topIdx = torCache.indexOf(t); } });
   const best = topIdx>=0 ? torCache[topIdx] : null;
-  vwSetWatch(best ? 'Лучшая раздача'+((lampaBridge()||canVlc()) && state.defPlayer!=='builtin' ? ' · VLC' : '') : null, best ? ()=>playTorrentNow(best, m) : null);
+  vwSetWatch(best ? 'Лучшая раздача'+((nativeBridge()||lampaBridge()||canVlc()) && state.defPlayer!=='builtin' ? ' · VLC' : '') : null, best ? ()=>playTorrentNow(best, m) : null);
   vwSetSub(`${arr.length} ${plural(arr.length,'раздача','раздачи','раздач')}${torLastQ?` · <b>${escTx(torLastQ)}</b>`:''}`);
   const el = $('#vwList'); if(!el) return;
   el.innerHTML = `<div class="vw-list">` + arr.map(t=>{
@@ -2370,6 +2372,15 @@ function vlcIntent(u){
    на нём сразу используем встроенный плеер. */
 function canVlc(){
   try{ return /Android/i.test(navigator.userAgent||''); }catch(e){ return false; }
+}
+/* Нативный мост нашего APK (WebView-оболочка «Пацюк Кино TV»):
+   открывает VLC через настоящий Android-интент — железобетонно,
+   без intent://-хаков, которые WebView не умеет. */
+function nativeBridge(){
+  try{
+    const K = window.KinoTV;
+    return (K && typeof K.openVlc==='function') ? K : null;
+  }catch(e){ return null; }
 }
 /* Мост в нативное приложение Lampa: «КиноTV» может работать внутри Lampa
    (в стартовом экране вместо адреса сервера Lampa введён наш адрес) —
