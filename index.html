@@ -1,0 +1,2048 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Пацюк Кино · TV</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ============ ПАЦЮК КИНО · TV ============ */
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#0c0f16; --bg2:#111623; --card:#182032; --card2:#1f2940;
+  --accent:#2f7bff; --accent2:#5b9bff;
+  --text:#fff; --muted:#8f99b0; --line:rgba(255,255,255,.09);
+  --r:.6em;
+}
+html{font-size:16px}
+body{background:var(--bg);color:var(--text);font-family:'Manrope',system-ui,sans-serif;
+  overflow:hidden;height:100vh;width:100vw;user-select:none;-webkit-user-select:none}
+button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
+img{display:block}
+::-webkit-scrollbar{display:none}
+:focus{outline:none}
+
+/* ---------- каркас ---------- */
+#app{display:flex;height:100vh;width:100vw}
+/* сайдбар — как в Lampa: узкая вертикальная панель иконок */
+#sidebar{width:4.6em;flex:0 0 auto;background:rgba(0,0,0,.35);border-right:1px solid var(--line);
+  display:flex;flex-direction:column;align-items:center;padding:.9em 0;gap:.35em;z-index:20}
+.sb-logo{width:2.6em;height:2.6em;border-radius:50%;background:linear-gradient(135deg,#2f7bff,#7b5bff);
+  display:flex;align-items:center;justify-content:center;font-size:1.15em;margin-bottom:.7em}
+.sb-btn{width:3.2em;height:3.2em;border-radius:.8em;display:flex;align-items:center;justify-content:center;
+  color:var(--muted);position:relative;transition:background .15s}
+.sb-btn svg{width:1.5em;height:1.5em}
+.sb-btn .sb-tip{position:absolute;left:calc(100% + .7em);top:50%;transform:translateY(-50%) scale(.9);
+  background:#000;border:1px solid var(--line);padding:.35em .8em;border-radius:.5em;font-size:.85em;
+  font-weight:700;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .15s;z-index:50}
+.sb-btn.focused{background:rgba(255,255,255,.1);color:#fff}
+.sb-btn.focused .sb-tip{opacity:1}
+.sb-btn.active{color:var(--accent2)}
+.sb-btn.active::before{content:'';position:absolute;left:-.85em;top:20%;bottom:20%;width:.25em;
+  border-radius:.2em;background:var(--accent)}
+.sb-space{flex:1}
+.sb-clock{font-size:.8em;color:var(--muted);font-weight:700}
+
+#main{flex:1;min-width:0;position:relative;overflow:hidden}
+.screen{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;padding:1.6em 2em 3em;
+  display:none;scrollbar-width:none}
+.screen.on{display:block}
+
+/* ---------- фокус (пульт) ---------- */
+.focused{position:relative;z-index:5}
+.card.focused{transform:scale(1.07);z-index:6}
+.card.focused .card__poster{box-shadow:0 0 0 .18em #fff,0 .8em 2em rgba(0,0,0,.5)}
+.btn.focused,.sb-btn.focused,.kb-key.focused,.pill.focused,.src.focused,.opt.focused{
+  box-shadow:0 0 0 .16em #fff}
+.btn.focused{background:rgba(255,255,255,.14)}
+.kb-key.focused{background:var(--accent)}
+.pill.focused{background:rgba(255,255,255,.16)}
+.src.focused{background:var(--card2)}
+.opt.focused{background:rgba(47,123,255,.25)}
+
+/* ---------- кнопки ---------- */
+.btn{display:inline-flex;align-items:center;gap:.6em;padding:.75em 1.6em;border-radius:.7em;
+  background:var(--card);font-weight:800;font-size:1.02em;border:1px solid var(--line)}
+.btn.primary{background:var(--accent);border-color:var(--accent)}
+.btn svg{width:1.2em;height:1.2em}
+
+/* ---------- hero (главная) ---------- */
+.hero{position:relative;height:23em;border-radius:1em;overflow:hidden;margin-bottom:1.8em;
+  background:var(--bg2);flex:0 0 auto}
+.hero__bg{position:absolute;inset:0}
+.hero__bg img{width:100%;height:100%;object-fit:cover}
+.hero__shade{position:absolute;inset:0;
+  background:linear-gradient(90deg,rgba(8,10,16,.96) 20%,rgba(8,10,16,.55) 55%,rgba(8,10,16,.05) 85%)}
+.hero__body{position:absolute;left:2.2em;bottom:2em;right:2em;max-width:38em}
+.hero__kicker{font-size:.85em;font-weight:800;color:var(--accent2);letter-spacing:.14em;
+  text-transform:uppercase;margin-bottom:.5em}
+.hero__title{font-size:2.5em;font-weight:800;line-height:1.05;margin-bottom:.35em}
+.hero__meta{display:flex;gap:.9em;align-items:center;color:var(--muted);font-weight:700;
+  font-size:1em;margin-bottom:1.1em}
+.hero__meta .rate{color:#ffcf3f}
+.hero__btns{display:flex;gap:.8em}
+
+/* ---------- ряды ---------- */
+.row{margin-bottom:1.7em}
+.row__head{display:flex;align-items:baseline;gap:1em;margin-bottom:.7em;padding:0 .2em}
+.row__title{font-size:1.25em;font-weight:800}
+.row__more{margin-left:auto;color:var(--muted);font-weight:700;font-size:.95em;
+  padding:.4em .9em;border-radius:.5em}
+.row__more.focused{color:#fff}
+.row__line{display:flex;gap:1em;overflow-x:auto;padding:.7em .2em .9em;scrollbar-width:none}
+
+/* ---------- карточка ---------- */
+.card{flex:0 0 auto;width:9.2em;transition:transform .16s ease;position:relative}
+.card__poster{position:relative;aspect-ratio:2/3;border-radius:var(--r);overflow:hidden;
+  background:var(--card)}
+.card__poster img{width:100%;height:100%;object-fit:cover}
+.card__badge{position:absolute;top:.45em;left:.45em;background:rgba(0,0,0,.72);backdrop-filter:blur(4px);
+  font-size:.78em;font-weight:800;padding:.28em .6em;border-radius:.45em;color:#ffcf3f}
+.card__title{font-size:.88em;font-weight:700;margin-top:.55em;line-height:1.3;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:2.3em}
+.card__sub{font-size:.78em;color:var(--muted);font-weight:600;margin-top:.15em}
+/* широкая карточка 16:9 */
+.card--wide{width:17em}
+.card--wide .card__poster{aspect-ratio:16/9}
+
+/* ---------- сетка ---------- */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(9.2em,1fr));gap:1.2em .9em;
+  padding:.7em .2em}
+.grid .card{width:auto}
+.tabs{display:flex;gap:.6em;margin-bottom:1.2em;flex-wrap:wrap}
+.pill{padding:.55em 1.3em;border-radius:2em;background:var(--card);font-weight:700;
+  border:1px solid var(--line);font-size:.98em}
+.pill.on{background:var(--accent);border-color:var(--accent)}
+
+/* ---------- страница фильма ---------- */
+.mv-back{position:relative;height:19em;margin:-1.6em -2em 0;overflow:hidden}
+.mv-back img{width:100%;height:100%;object-fit:cover}
+.mv-back::after{content:'';position:absolute;inset:0;
+  background:linear-gradient(180deg,rgba(12,15,22,.25),rgba(12,15,22,.92) 85%,var(--bg))}
+.mv-wrap{position:relative;margin-top:-7em;display:flex;gap:1.8em}
+.mv-poster{width:11.5em;flex:0 0 auto}
+.mv-poster img{width:100%;aspect-ratio:2/3;object-fit:cover;border-radius:.7em;
+  box-shadow:0 1em 3em rgba(0,0,0,.5)}
+.mv-info{flex:1;min-width:0;padding-top:5.2em}
+.mv-title{font-size:2em;font-weight:800;line-height:1.1;margin-bottom:.3em}
+.mv-orig{color:var(--muted);font-weight:600;margin-bottom:.6em}
+.mv-meta{display:flex;gap:1em;flex-wrap:wrap;align-items:center;font-weight:700;margin-bottom:1em}
+.mv-meta .rate{color:#ffcf3f;font-size:1.15em}
+.mv-meta .q{background:var(--card);border:1px solid var(--line);padding:.25em .7em;border-radius:.4em;
+  font-size:.85em}
+.mv-btns{display:flex;gap:.8em;margin-bottom:1.3em;flex-wrap:wrap}
+.mv-desc{color:#c9d1e3;line-height:1.65;font-size:1.02em;max-width:52em;margin-bottom:1.6em}
+.mv-sec{font-size:1.2em;font-weight:800;margin:0 0 .8em}
+.src{background:var(--card);border:1px solid var(--line);border-radius:.7em;
+  padding:1em 1.3em;margin-bottom:.7em;display:flex;align-items:center;gap:1em;width:100%;text-align:left}
+.src__t{font-weight:800;font-size:1.05em}
+.src__s{color:var(--muted);font-size:.88em;font-weight:600;margin-top:.15em}
+.src__go{margin-left:auto;color:var(--muted);font-size:1.3em}
+
+/* ---------- поиск + клавиатура ---------- */
+.search-box{display:flex;gap:1em;margin-bottom:1.4em}
+.search-input{flex:1;background:var(--card);border:1px solid var(--line);border-radius:.7em;
+  padding:.8em 1.2em;font-size:1.15em;font-weight:700;color:#fff;min-width:0}
+.search-input.focused{box-shadow:0 0 0 .16em #fff}
+.kb{display:flex;flex-direction:column;gap:.45em;margin-bottom:1.6em;max-width:46em}
+.kb__row{display:flex;gap:.45em}
+.kb-key{flex:1;background:var(--card);border:1px solid var(--line);border-radius:.5em;
+  padding:.6em 0;font-size:1.15em;font-weight:800;text-align:center;min-width:2.2em}
+.kb-key.wide{flex:2.4}
+
+/* ---------- настройки ---------- */
+.set{max-width:44em}
+.set-row{display:flex;align-items:center;gap:1em;background:var(--card);
+  border:1px solid var(--line);border-radius:.7em;padding:1em 1.3em;margin-bottom:.7em;width:100%;
+  text-align:left}
+.set-row__t{font-weight:800;font-size:1.05em}
+.set-row__s{color:var(--muted);font-size:.88em;margin-top:.15em;word-break:break-all}
+.set-row .val{margin-left:auto;color:var(--accent2);font-weight:700;flex:0 0 auto;max-width:16em;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.set-cap{font-size:1.25em;font-weight:800;margin:1.4em 0 .8em}
+.set-cap:first-child{margin-top:0}
+
+/* ---------- шторка ---------- */
+#veil{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;z-index:90;
+  align-items:center;justify-content:center}
+#veil.on{display:flex}
+.sheet{background:var(--bg2);border:1px solid var(--line);border-radius:1em;
+  width:min(34em,90vw);max-height:80vh;overflow-y:auto;padding:1.4em}
+.sheet__t{font-size:1.3em;font-weight:800;margin-bottom:1em}
+.opt{display:flex;align-items:center;gap:1em;width:100%;text-align:left;background:var(--card);
+  border:1px solid var(--line);border-radius:.7em;padding:1em 1.2em;margin-bottom:.6em}
+.opt__t{font-weight:800;font-size:1.05em}
+.opt__s{color:var(--muted);font-size:.88em;margin-top:.1em}
+.opt .tick{margin-left:auto;color:var(--accent2);font-size:1.3em;font-weight:800}
+
+/* ---------- плеер ---------- */
+#player{position:fixed;inset:0;background:#000;z-index:100;display:none}
+#player.on{display:block}
+#player video{width:100%;height:100%}
+.pv-ui{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:flex-end;
+  background:linear-gradient(180deg,rgba(0,0,0,.45),transparent 30%,transparent 65%,rgba(0,0,0,.75));
+  opacity:0;transition:opacity .3s;padding:1.5em 2em}
+#player.showui .pv-ui{opacity:1}
+.pv-title{position:absolute;top:1.2em;left:2em;font-size:1.2em;font-weight:800}
+.pv-bar{height:.4em;background:rgba(255,255,255,.25);border-radius:.3em;margin-bottom:1em;position:relative}
+.pv-fill{position:absolute;left:0;top:0;bottom:0;background:var(--accent);border-radius:.3em}
+.pv-row{display:flex;gap:1em;align-items:center}
+.pv-btn{width:3em;height:3em;border-radius:50%;background:rgba(255,255,255,.12);
+  display:flex;align-items:center;justify-content:center}
+.pv-btn svg{width:1.4em;height:1.4em}
+.pv-btn.focused{box-shadow:0 0 0 .16em #fff;background:rgba(255,255,255,.25)}
+.pv-time{margin-left:auto;font-weight:700;color:#dfe6f5}
+
+/* ---------- тост ---------- */
+#toast{position:fixed;left:50%;bottom:2.5em;transform:translateX(-50%) translateY(1em);
+  background:rgba(10,13,20,.94);border:1px solid var(--line);padding:.8em 1.5em;border-radius:.7em;
+  font-weight:700;opacity:0;transition:all .25s;z-index:200;pointer-events:none;max-width:80vw;
+  text-align:center}
+#toast.on{opacity:1;transform:translateX(-50%)}
+
+.empty{color:var(--muted);text-align:center;padding:4em 1em;font-size:1.1em;font-weight:600}
+.h1{font-size:1.7em;font-weight:800;margin-bottom:1em}
+.load{display:flex;align-items:center;justify-content:center;padding:4em;color:var(--muted);
+  font-weight:700;font-size:1.1em}
+.spin{width:2em;height:2em;border:.25em solid var(--line);border-top-color:var(--accent);
+  border-radius:50%;animation:sp 1s linear infinite;margin-right:.8em}
+@keyframes sp{to{transform:rotate(360deg)}}
+
+/* ---------- источники (портировано из «Кино», ТВ-стили) ---------- */
+.vw-head{display:flex;align-items:center;gap:1.2em;margin-bottom:1.2em}
+.vw-kicker{font-size:.85em;font-weight:800;color:var(--accent2);letter-spacing:.14em;text-transform:uppercase}
+.vw-title{font-size:1.7em;font-weight:800}
+.vw-meta{color:var(--muted);font-weight:700}
+.vw-meta .rate{color:#ffcf3f}
+.vw-q{background:var(--card);border:1px solid var(--line);padding:.25em .7em;border-radius:.4em;font-size:.85em;font-weight:800}
+.vw-watch{display:inline-flex;align-items:center;gap:.6em;padding:.75em 1.6em;border-radius:.7em;
+  background:var(--accent);font-weight:800;font-size:1.02em;margin:.8em 0}
+.vw-watch svg{width:1.2em;height:1.2em;fill:#fff}
+.vw-sub{color:var(--muted);font-weight:600;margin-bottom:1em}
+.vw-pills{display:flex;gap:.6em;flex-wrap:wrap;margin-bottom:1.2em}
+.vw-pill{padding:.55em 1.3em;border-radius:2em;background:var(--card);font-weight:700;border:1px solid var(--line);font-size:.98em}
+.vw-pill.on{background:var(--accent);border-color:var(--accent)}
+.vw-sec-t{font-size:1.2em;font-weight:800;margin:1.2em 0 .7em}
+.vw-load{color:var(--muted);font-weight:700;padding:3em;text-align:center;font-size:1.05em}
+.vw-list{display:flex;flex-direction:column;gap:.6em;max-width:56em}
+.vw-voice{display:flex;align-items:center;justify-content:space-between;gap:1em;width:100%;
+  padding:1em 1.3em;border-radius:.7em;text-align:left;border:1px solid var(--line);
+  background:var(--card);font-size:1.02em;font-weight:700}
+.vw-voice .vs{font-size:.82em;color:var(--muted);font-weight:600;margin-top:.2em}
+.vw-voice.focused{background:var(--card2)}
+.vw-backline{color:var(--muted);font-weight:800;font-size:1.05em;padding:.6em 0;text-align:left}
+.vw-backline.focused{color:#fff}
+.vw-ep{display:flex;gap:1em;align-items:center;padding:.8em 1em;border-radius:.7em;text-align:left;width:100%;
+  border:1px solid var(--line);background:var(--card)}
+.vw-ep.focused{background:var(--card2)}
+.vw-epbody{flex:1;min-width:0}
+.vw-ept{display:block;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.vw-eps{display:block;font-size:.85em;color:var(--muted);font-weight:600;margin-top:.25em}
+.vw-eps .rate{color:#ffcf3f;font-weight:800}
+.vw-num{font-size:1.4em;font-weight:800;color:var(--muted);flex:0 0 auto;min-width:2em;text-align:center}
+.vw-thumb{width:7em;aspect-ratio:16/9;object-fit:cover;border-radius:.4em;flex:0 0 auto}
+.vw-side{display:flex;flex-direction:column;align-items:flex-end;gap:.4em;flex:0 0 auto}
+.vw-prog{height:.25em;border-radius:.2em;background:rgba(255,255,255,.1);margin-top:.5em;overflow:hidden}
+.vw-prog i{display:block;height:100%;background:var(--accent);border-radius:.2em}
+.vw-done{color:#7ee2a8;font-size:.85em;font-weight:800}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.13/dist/hls.min.js"></script>
+</head>
+<body>
+<div id="app">
+  <nav id="sidebar" aria-label="Меню"></nav>
+  <main id="main"></main>
+</div>
+
+<div id="veil"><div class="sheet" id="sheetBox" role="dialog"></div></div>
+
+<div id="player">
+  <video id="pvVideo" playsinline></video>
+  <div class="pv-ui" id="pvUI">
+    <div class="pv-title" id="pvTitle"></div>
+    <div class="pv-bar" id="pvBar"><div class="pv-fill" id="pvFill"></div></div>
+    <div class="pv-row" id="pvRow"></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+<script>
+'use strict';
+/* =====================================================================
+   ПАЦЮК КИНО · TV — ТВ-приложение (пульт, Lampa-организация)
+   ===================================================================== */
+
+/* ---------- масштаб: всё в em от высоты экрана (как в Lampa) ---------- */
+function fitScale(){
+  const h = window.innerHeight || 720;
+  document.documentElement.style.fontSize = (h/45).toFixed(2) + 'px';
+}
+window.addEventListener('resize', fitScale);
+fitScale();
+
+/* ---------- helpers ---------- */
+const $ = s=>document.querySelector(s);
+const $$ = s=>[...document.querySelectorAll(s)];
+const escTx = s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+let toastT=0;
+function toast(msg, ms){
+  const t=$('#toast'); t.textContent=msg; t.classList.add('on');
+  clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('on'), ms||2600);
+}
+function fmtDate(d){
+  if(!d) return '';
+  const m=['янв','фев','мар','апр','мая','июн','июл','авг','сен','окт','ноя','дек'];
+  const x=new Date(d+'T00:00:00'); if(isNaN(x)) return d;
+  return x.getDate()+' '+m[x.getMonth()];
+}
+
+/* ================= LS + STATE (общие ключи с «Кино» — один origin) ================= */
+const LS = {
+  get(k, d){ try{ const v = localStorage.getItem('kino.'+k); return v===null? d : JSON.parse(v); }catch(e){ return d; } },
+  set(k, v){ try{ localStorage.setItem('kino.'+k, JSON.stringify(v)); }catch(e){} }
+};
+const state = {
+  tmdbKey: LS.get('tmdb_key',''),
+  tsUrl: LS.get('ts_url','http://127.0.0.1:8090'),
+  tsUrlHttp: LS.get('ts_url_http',''),
+  jacUrl: LS.get('jac_url','https://jac.red'),
+  jacKey: LS.get('jac_key',''),
+  fxToken: LS.get('fx_token',''),
+  fxProxy: LS.get('fx_proxy','https://cors.jacred.stream/'),
+  rzProxy: LS.get('rz_proxy',''),
+  rzCookie: LS.get('rz_cookie',''),
+  favs: LS.get('favs', {like:[], later:[], mark:[]}),
+  history: LS.get('history', []),
+  hidden: LS.get('hidden', []),
+  liked: LS.get('liked', []),
+  torQ: LS.get('tor_qmode','orig_ru_year'),
+};
+const VID_EXT = ['.mp4','.mkv','.avi','.ts','.m2ts','.webm','.mov','.mpg','.mpeg'];
+const plural=(n,a,b,c)=>{const m10=n%10,m100=n%100;return m10===1&&m100!==11?a:(m10>=2&&m10<=4&&(m100<12||m100>14)?b:c);};
+const shortName=p=>{p=p||'';const i=Math.max(p.lastIndexOf('/'),p.lastIndexOf('\\'));return i>=0?p.slice(i+1):p;};
+const fmtSize=b=>{if(!b)return '—';const g=b/1073741824;if(g>=1)return g.toFixed(1)+' ГБ';const m=b/1048576;if(m>=1)return m.toFixed(0)+' МБ';return Math.round(b/1024)+' КБ';};
+const isVideo=p=>{p=(p||'').toLowerCase();return VID_EXT.some(e=>p.endsWith(e));};
+let torSubsCache = [];
+const IMG = 'https://image.tmdb.org/t/p/';
+const posterURL = p=>p ? IMG+'w500'+p : '';
+const backURL = p=>p ? IMG+'w1280'+p : '';
+const RU_GENRE = {28:'Боевик',12:'Приключения',16:'Анимация',35:'Комедия',80:'Криминал',18:'Драма',14:'Фэнтези',27:'Ужасы',10749:'Мелодрама',878:'Фантастика',53:'Триллер',36:'История',10402:'Музыка',10759:'Боевик',10765:'Фантастика',10762:'Детям',10763:'Новости',10764:'Реалити',10767:'Ток-шоу'};
+
+async function tmdb(path){
+  const r = await fetch(`https://api.themoviedb.org/3${path}${path.includes('?')?'&':'?'}api_key=${state.tmdbKey}&language=ru-RU`);
+  if(!r.ok) throw new Error('tmdb '+r.status);
+  return r.json();
+}
+function norm(m, media){
+  const mt = (typeof media==='string' ? media : null) || m.media_type || m.media || 'movie';
+  const rid = String(m.id);
+  return {
+    id: mt==='tv' && !rid.startsWith('tv') ? 'tv'+rid : m.id,
+    title: m.title || m.name || 'Без названия',
+    orig: m.original_title || m.original_name || '',
+    year: String(m.release_date||m.first_air_date||'').slice(0,4) || '—',
+    date: m.release_date||m.first_air_date||'',
+    rating: m.vote_average!==undefined ? +m.vote_average.toFixed(1) : (m.rating||0),
+    votes: m.vote_count || 0,
+    popularity: m.popularity || 0,
+    genres: m.genre_ids ? m.genre_ids.map(g=>RU_GENRE[g]).filter(Boolean) : (m.genres||[]),
+    desc: m.overview || 'Описание скоро появится.',
+    poster: m.poster_path || null,
+    backdrop: m.backdrop_path || null,
+    media: mt,
+  };
+}
+function tvId(m){ return m.media==='tv' ? 'tv'+String(m.id).replace(/^tv/,'') : m.id; }
+function numId(id){ return String(id).replace(/^tv/,''); }
+
+/* ---------- карточки ---------- */
+function cardHTML(m, wide){
+  const id = tvId(m);
+  const badge = m.rating ? `<div class="card__badge">★ ${m.rating}</div>` : '';
+  return `<div class="card${wide?' card--wide':''}" data-id="${escTx(id)}" data-media="${m.media}" tabindex="0">
+    <div class="card__poster">${m.poster?`<img loading="lazy" src="${posterURL(m.poster)}" alt="">`:''}${badge}</div>
+    <div class="card__title">${escTx(m.title)}</div>
+    <div class="card__sub">${escTx(m.year)}${m.genres&&m.genres[0]?' · '+escTx(m.genres[0]):''}</div>
+  </div>`;
+}
+function rowHTML(title, items, more){
+  return `<div class="row"><div class="row__head"><div class="row__title">${escTx(title)}</div>
+    ${more?`<button class="row__more" data-more="${escTx(more)}">Ещё ›</button>`:''}</div>
+    <div class="row__line">${items.map(m=>cardHTML(m)).join('')}</div></div>`;
+}
+
+/* ================= НАВИГАЦИЯ (пульт, пространственная) ================= */
+const NAV = { cur:null, mem:{}, prev:null, layer:'app' };
+const NAV_SEL = '.sb-btn, .screen.on .btn, .screen.on .card, .screen.on .pill, .screen.on .kb-key, .screen.on .src, .screen.on .opt, .screen.on .row__more, .screen.on .vw-voice, .screen.on .vw-pill, .screen.on .vw-ep, .screen.on .vw-backline, .screen.on .vw-watch, .screen.on .search-input, .screen.on .set-row, #veil.on .opt, #veil.on .btn, #player.on .pv-btn';
+function navR(el){
+  const r = el.getBoundingClientRect();
+  return {l:r.left, t:r.top, r:r.right, b:r.bottom, cx:r.left+r.width/2, cy:r.top+r.height/2, w:r.width, h:r.height};
+}
+function navVisible(el){
+  if(!el || !el.isConnected) return false;
+  const r = el.getBoundingClientRect();
+  if(r.width < 4 || r.height < 4) return false;
+  const cs = getComputedStyle(el);
+  if(cs.display==='none' || cs.visibility==='hidden' || +cs.opacity===0) return false;
+  const vw = window.innerWidth;
+  if(r.right <= 0 || r.left >= vw) return false;
+  if(r.bottom <= -40 || r.top >= window.innerHeight+40) return false;
+  return true;
+}
+function navCollect(){
+  let root;
+  if($('#player').classList.contains('on')) root = $('#player');
+  else if($('#veil').classList.contains('on')) root = $('#veil');
+  else root = document;
+  const scope = root===document ? '.screen.on' : '';
+  const sel = root===document ? NAV_SEL
+    : (root.id==='player' ? '#player.on .pv-btn' : '#veil.on .opt, #veil.on .btn');
+  return [...new Set([...root.querySelectorAll(sel)])].filter(navVisible);
+}
+function navScroll(el){
+  let p = el.parentElement;
+  while(p && p!==document.body){
+    const cs = getComputedStyle(p);
+    if((cs.overflowX==='auto'||cs.overflowX==='scroll') && p.scrollWidth > p.clientWidth + 4) return p;
+    p = p.parentElement;
+  }
+  return null;
+}
+function navEnsure(el){
+  const hs = navScroll(el);
+  const anchor = hs || el;
+  const ar = anchor.getBoundingClientRect(), vw = window.innerWidth, vh = window.innerHeight;
+  if(hs){
+    const r = el.getBoundingClientRect();
+    if(r.left < ar.left + 8) hs.scrollTo({left: hs.scrollLeft + (r.left - ar.left) - 40, behavior:'auto'});
+    else if(r.right > ar.right - 8) hs.scrollTo({left: hs.scrollLeft + (r.right - ar.right) + 40, behavior:'auto'});
+  }
+  if(ar.top < 70 || ar.bottom > vh - 30){
+    anchor.scrollIntoView({block:'nearest', behavior:'auto'});
+    window.scrollBy(0, -10);
+  }
+}
+function navSpatial(from, dir){
+  const els = navCollect().filter(e=>e!==from);
+  if(!els.length) return null;
+  // возврат: обратный ход к источнику
+  const pv = NAV.prev;
+  if(pv && pv.dst===from){
+    const want = {up:'down', down:'up', left:'right', right:'left'}[pv.rev];
+    if(want===dir){
+      const back = els.find(e=>e===pv.src) || null;
+      if(back){ NAV.prev=null; return back; }
+    }
+  }
+  const T = navR(from);
+  const groups = {};
+  els.forEach(e=>{
+    const rc = navR(e);
+    const x = rc.cx < T.l ? 0 : (rc.cx <= T.r ? 1 : 2);
+    const y = rc.cy < T.t ? 0 : (rc.cy <= T.b ? 1 : 2);
+    (groups[y*3+x] = groups[y*3+x] || []).push({el:e, rc});
+  });
+  const order = dir==='left' ? [3,0,6,4,1,7] : dir==='right' ? [5,2,8,4,1,7]
+    : dir==='up' ? [1,0,2,4,6,8] : [7,6,8,4,0,2];
+  const dist = (rc, straight)=>{
+    const dx = Math.max(T.l - rc.r, 0, rc.l - T.r);
+    const dy = Math.max(T.t - rc.b, 0, rc.t - T.b);
+    return straight ? dx+dy : dx+dy + Math.abs(rc.cx-T.cx)*0.35 + Math.abs(rc.cy-T.cy)*0.35;
+  };
+  for(const g of order){
+    const arr = groups[g]; if(!arr || !arr.length) continue;
+    const straight = (g===3||g===5||g===1||g===7);
+    arr.sort((a,b)=>dist(a.rc,straight)-dist(b.rc,straight));
+    const pick = arr[0].el;
+    NAV.prev = {src:from, dst:pick, rev:dir};
+    return pick;
+  }
+  return null;
+}
+function navFocus(el){
+  if(!el || !navVisible(el)) return false;
+  if(NAV.cur) NAV.cur.classList.remove('focused');
+  NAV.cur = el;
+  el.classList.add('focused');
+  try{ el.focus({preventScroll:true}); }catch(e){}
+  NAV.mem[curScreen()] = el;
+  navEnsure(el);
+  return true;
+}
+function navMove(dir){
+  const from = NAV.cur && navVisible(NAV.cur) ? NAV.cur : null;
+  if(!from){
+    const els = navCollect();
+    if(els.length) navFocus(els[0]);
+    return;
+  }
+  const next = navSpatial(from, dir);
+  if(next) navFocus(next);
+}
+function navClick(){
+  const el = NAV.cur;
+  if(el) el.click();
+}
+function navBack(){
+  if($('#player').classList.contains('on')){ closePlayer(); return; }
+  if($('#veil').classList.contains('on')){ closeSheet(); return; }
+  if(curScreen()==='movie'){ goScreen(lastMain || 'home'); return; }
+  if(curScreen()==='view'){ goScreen('movie'); if(MV) paintMovie(MV); return; }
+  // уже на главном экране — ничего
+}
+
+/* ---------- шторка ---------- */
+let sheetCb = null;
+function openSheet(title, opts, cb){
+  sheetCb = cb;
+  $('#sheetBox').innerHTML = `<div class="sheet__t">${escTx(title)}</div>` +
+    opts.map((o,i)=>`<button class="opt" data-i="${i}">
+      <div><div class="opt__t">${escTx(o.t)}</div>${o.s?`<div class="opt__s">${escTx(o.s)}</div>`:''}</div>
+    </button>`).join('');
+  $('#veil').classList.add('on');
+  requestAnimationFrame(()=>{ const f=$('#veil .opt'); if(f) navFocus(f); });
+}
+function closeSheet(){
+  $('#veil').classList.remove('on');
+  sheetCb = null;
+}
+$('#veil').addEventListener('click', e=>{
+  if(e.target.id==='veil') closeSheet();
+});
+
+/* ---------- клавиатура пульта ---------- */
+document.addEventListener('keydown', e=>{
+  if($('#player').classList.contains('on')) return;
+  const k = e.key;
+  const inField = /INPUT|TEXTAREA/.test(document.activeElement && document.activeElement.tagName || '');
+  if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Enter',' '].includes(k) && !inField) e.preventDefault();
+  if(k==='ArrowLeft') navMove('left');
+  else if(k==='ArrowRight') navMove('right');
+  else if(k==='ArrowUp') navMove('up');
+  else if(k==='ArrowDown') navMove('down');
+  else if(k==='Enter' || k===' ') navClick();
+  else if(k==='Escape' || k==='Backspace' || k==='BrowserBack' || e.keyCode===461 || e.keyCode===10009){
+    if(inField && k==='Backspace') return;
+    navBack();
+  }
+});
+document.addEventListener('click', e=>{
+  const o = e.target.closest('#veil .opt');
+  if(o && sheetCb){ const i=+o.dataset.i, cb=sheetCb; closeSheet(); cb(i); }
+});
+document.addEventListener('focusin', e=>{
+  const t = e.target;
+  if(t && t.matches && t.matches(NAV_SEL.replace(/, #/g,',#'))){
+    if(NAV.cur) NAV.cur.classList.remove('focused');
+    NAV.cur = t; t.classList.add('focused');
+    NAV.mem[curScreen()] = t;
+  }
+});
+
+/* ================= САЙДБАР + ЭКРАНЫ ================= */
+const ICO = {
+  home:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg>',
+  film:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M7 3v18M17 3v18M3 8h4M3 16h4M17 8h4M17 16h4"/></svg>',
+  tv:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg>',
+  search:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>',
+  heart:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20.5C7 16.5 3 13 3 8.8 3 6 5.2 4 7.8 4c1.7 0 3.2.9 4.2 2.3C13 4.9 14.5 4 16.2 4 18.8 4 21 6 21 8.8c0 4.2-4 7.7-9 11.7z"/></svg>',
+  hist:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 2.6-6.4"/><path d="M3 4v5h5"/><path d="M12 8v4l3 2"/></svg>',
+  gear:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1.04 1.56V21a2 2 0 1 1-4 0v-.09a1.7 1.7 0 0 0-1.04-1.56 1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.7 1.7 0 0 0 .34-1.87 1.7 1.7 0 0 0-1.56-1.04H3a2 2 0 1 1 0-4h.09a1.7 1.7 0 0 0 1.56-1.04 1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.7 1.7 0 0 0 1.87.34h.09a1.7 1.7 0 0 0 1.04-1.56V3a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 1.04 1.56 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87v.09a1.7 1.7 0 0 0 1.56 1.04H21a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.51 1.04z"/></svg>',
+  play:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>',
+  plus:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+  check:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m4 12.5 5 5L20 6.5"/></svg>',
+  back:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>',
+};
+const MENU = [
+  {id:'home', t:'Главная', ico:'home'},
+  {id:'movies', t:'Фильмы', ico:'film'},
+  {id:'series', t:'Сериалы', ico:'tv'},
+  {id:'search', t:'Поиск', ico:'search'},
+  {id:'fav', t:'Избранное', ico:'heart'},
+  {id:'hist', t:'История', ico:'hist'},
+  {id:'settings', t:'Настройки', ico:'gear'},
+];
+let curScr = 'home', lastMain = 'home';
+function curScreen(){ return curScr; }
+
+function buildSidebar(){
+  const sb = $('#sidebar');
+  if(!sb) return;
+  sb.innerHTML =
+    '<div class="sb-logo">🐾</div>' +
+    MENU.map(m=>'<button class="sb-btn" data-scr="'+m.id+'">'+ICO[m.ico]+'<span class="sb-tip">'+m.t+'</span></button>').join('') +
+    '<div class="sb-space"></div><div class="sb-clock" id="sbClock"></div>';
+  sb.querySelectorAll('.sb-btn').forEach(b=>b.addEventListener('click', ()=>goScreen(b.dataset.scr)));
+  tickClock(); setInterval(tickClock, 20000);
+}
+function tickClock(){
+  const el=$('#sbClock'); if(!el) return;
+  const d=new Date();
+  el.textContent = String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+}
+function buildScreens(){
+  $('#main').innerHTML = ['home','movies','series','search','fav','hist','settings','movie','view']
+    .map(id=>'<section class="screen" id="scr-'+id+'"></section>').join('');
+}
+function goScreen(id){
+  if(!document.getElementById('scr-'+id)) id='home';
+  if(['home','movies','series','search','fav','hist','settings'].includes(id)) lastMain = id;
+  curScr = id;
+  $$('.screen').forEach(s=>s.classList.remove('on'));
+  $('#scr-'+id).classList.add('on');
+  $$('#sidebar .sb-btn').forEach(b=>b.classList.toggle('active', b.dataset.scr===id));
+  $('#scr-'+id).scrollTop = 0;
+  const render = {home:renderHome, movies:()=>renderCatalog('movie'), series:()=>renderCatalog('tv'),
+    search:renderSearch, fav:renderFav, hist:renderHist, settings:renderSettings}[id];
+  if(render) render();
+  requestAnimationFrame(()=>{
+    const mem = NAV.mem[id];
+    navFocus(mem && navVisible(mem) ? mem : $('#scr-'+id+' .card, #scr-'+id+' .btn, #scr-'+id+' .pill, #scr-'+id+' .kb-key, #scr-'+id+' .set-row, #scr-'+id+' .search-input'));
+  });
+}
+
+/* ================= ГЛАВНАЯ ================= */
+const HOME = {rows:[], hero:null};
+async function renderHome(){
+  const box = $('#scr-home');
+  if(!state.tmdbKey){
+    box.innerHTML = '<div class="empty">Вставь TMDB-ключ в Настройках,<br>чтобы оживить главную 🐾</div>';
+    return;
+  }
+  if(HOME.rows.length){ paintHome(); return; }
+  box.innerHTML = '<div class="load"><div class="spin"></div>Загружаю…</div>';
+  try{
+    const [tr, now, top, tvt] = await Promise.all([
+      tmdb('/trending/movie/week'), tmdb('/movie/now_playing?region=RU'),
+      tmdb('/movie/top_rated'), tmdb('/trending/tv/week'),
+    ]);
+    const T=(tr.results||[]).map(r=>norm(r)), N=(now.results||[]).map(r=>norm(r)),
+          P=(top.results||[]).map(r=>norm(r)).sort((a,b)=>b.rating-a.rating),
+          TT=(tvt.results||[]).map(r=>norm(r,'tv'));
+    HOME.hero = [...N].sort((a,b)=>(b.popularity||0)-(a.popularity||0))[0] || T[0];
+    HOME.rows = [
+      {t:'В тренде', items:T},
+      {t:'Сейчас в кино', items:N},
+      {t:'Топ по рейтингу', items:P},
+      {t:'Сериалы в тренде', items:TT},
+    ];
+  }catch(e){ box.innerHTML = '<div class="empty">Не получилось загрузить 😕<br>'+escTx(e.message)+'</div>'; return; }
+  paintHome();
+}
+function paintHome(){
+  const box = $('#scr-home'), h = HOME.hero;
+  let html = '';
+  if(h){
+    html += '<div class="hero" data-id="'+escTx(tvId(h))+'" data-media="'+h.media+'" tabindex="0">'
+      + '<div class="hero__bg">'+(h.backdrop?'<img src="'+backURL(h.backdrop)+'" alt="">':'')+'</div>'
+      + '<div class="hero__shade"></div><div class="hero__body">'
+      + '<div class="hero__kicker">Выбор редакции</div>'
+      + '<div class="hero__title">'+escTx(h.title)+'</div>'
+      + '<div class="hero__meta"><span class="rate">★ '+h.rating+'</span><span>'+escTx(h.year)+'</span><span>'+escTx((h.genres||[]).slice(0,2).join(' · '))+'</span></div>'
+      + '<div class="hero__btns"><button class="btn primary" data-act="watch">'+ICO.play+' Смотреть</button></div>'
+      + '</div></div>';
+  }
+  html += HOME.rows.map(r=>rowHTML(r.t, r.items.slice(0,16))).join('');
+  box.innerHTML = html;
+  bindCards(box);
+}
+
+/* ================= КАТАЛОГ ================= */
+const CAT = {movie:{tab:'pop', items:[], page:1}, tv:{tab:'pop', items:[], page:1}};
+const CAT_TABS = {
+  movie:[['pop','Популярные','/movie/popular'],['top','Топ','/movie/top_rated'],['now','Сейчас в кино','/movie/now_playing?region=RU'],['up','Скоро','/movie/upcoming?region=RU']],
+  tv:[['pop','Популярные','/tv/popular'],['top','Топ','/tv/top_rated'],['air','Сейчас в эфире','/tv/on_the_air'],['today','Сегодня в эфире','/tv/airing_today']],
+};
+async function renderCatalog(media){
+  const box = $(media==='movie' ? '#scr-movies' : '#scr-series');
+  const tabs = CAT_TABS[media];
+  box.innerHTML = '<div class="h1">'+(media==='movie'?'Фильмы':'Сериалы')+'</div>'
+    + '<div class="tabs">'+tabs.map(t=>'<button class="pill'+(CAT[media].tab===t[0]?' on':'')+'" data-tab="'+t[0]+'">'+t[1]+'</button>').join('')+'</div>'
+    + '<div class="grid" id="catGrid"></div>';
+  box.querySelectorAll('.pill').forEach(p=>p.onclick=()=>{ CAT[media].tab=p.dataset.tab; CAT[media].page=1; renderCatalog(media); });
+  await catLoad(media, box);
+  bindCards(box);
+}
+async function catLoad(media, box){
+  const st = CAT[media];
+  const tab = CAT_TABS[media].find(t=>t[0]===st.tab);
+  const grid = box.querySelector('#catGrid');
+  grid.innerHTML = '<div class="load"><div class="spin"></div>Загружаю…</div>';
+  try{
+    const j = await tmdb(tab[2] + (tab[2].includes('?')?'&':'?') + 'page='+st.page);
+    st.items = (j.results||[]).map(r=>norm(r, media));
+    grid.innerHTML = st.items.map(m=>cardHTML(m)).join('');
+  }catch(e){ grid.innerHTML = '<div class="empty">Ошибка загрузки 😕</div>'; }
+}
+
+function bindCards(root){
+  root.querySelectorAll('.card').forEach(c=>{
+    c.addEventListener('click', ()=>openMovie(c.dataset.id, c.dataset.media));
+  });
+  const hero = root.querySelector('.hero');
+  if(hero){
+    hero.addEventListener('click', e=>{
+      if(e.target.closest('[data-act="watch"]')){ openMovie(hero.dataset.id, hero.dataset.media, true); }
+      else openMovie(hero.dataset.id, hero.dataset.media);
+    });
+  }
+}
+
+/* ================= ЭКРАН ФИЛЬМА ================= */
+let MV = null;
+function favSnap(m){
+  return {id: tvId(m), title:m.title, orig:m.orig||'', year:m.year||'', rating:m.rating||0,
+    poster:m.poster||null, genres:(m.genres||[]).slice(0,3), media:m.media||'movie'};
+}
+function pushHistory(m){
+  if(!m) return;
+  const id = tvId(m), arr = state.history;
+  const i = arr.findIndex(x=>String(x.id)===String(id));
+  if(i!==-1) arr.splice(i,1);
+  arr.unshift(favSnap(m));
+  if(arr.length>100) arr.length = 100;
+  LS.set('history', arr);
+}
+function isFav(id){
+  return state.favs.like.some(x=>String(x.id)===String(id));
+}
+function toggleFav(m){
+  const id = tvId(m), a = state.favs.like;
+  const i = a.findIndex(x=>String(x.id)===String(id));
+  if(i===-1){ a.unshift(favSnap(m)); toast('В избранном ❤'); }
+  else { a.splice(i,1); toast('Убрано из избранного'); }
+  LS.set('favs', state.favs);
+  if(curScreen()==='movie' && MV && String(tvId(MV))===String(id)) paintMovie(MV);
+  if(curScreen()==='fav') renderFav();
+}
+async function openMovie(id, media, autoplay){
+  goScreen('movie');
+  const box = $('#scr-movie');
+  box.innerHTML = '<div class="load"><div class="spin"></div>Загружаю…</div>';
+  const isTv = String(id).startsWith('tv') || media==='tv';
+  const num = String(id).replace(/^tv/,'');
+  const pre = [...state.history, ...state.favs.like].find(x=>String(x.id)===String(id));
+  try{
+    const d = await tmdb('/'+(isTv?'tv':'movie')+'/'+num+'?append_to_response=credits&language=ru-RU');
+    const m = norm(d, isTv?'tv':'movie');
+    m.cast = (((d.credits||{}).cast)||[]).slice(0,14);
+    m.runtime = d.runtime || null;
+    m.seasons = d.number_of_seasons || null;
+    MV = m; pushHistory(m); paintMovie(m);
+    if(autoplay) chooseSource(m);
+  }catch(e){
+    if(pre){ MV = Object.assign({}, pre, {desc:'', cast:[], media:pre.media||'movie'}); paintMovie(MV); }
+    else box.innerHTML = '<div class="empty">Не удалось загрузить 😕<br>'+escTx(e.message)+'</div>';
+  }
+}
+function paintMovie(m){
+  const box = $('#scr-movie');
+  const fav = isFav(tvId(m));
+  let html = '<div class="mv-back">'+(m.backdrop?'<img src="'+backURL(m.backdrop)+'" alt="">':'')+'</div>'
+    + '<div class="mv-wrap"><div class="mv-poster">'+(m.poster?'<img src="'+posterURL(m.poster)+'" alt="">':'')+'</div>'
+    + '<div class="mv-info">'
+    + '<div class="mv-title">'+escTx(m.title)+'</div>'
+    + ((m.orig && m.orig!==m.title)?'<div class="mv-orig">'+escTx(m.orig)+'</div>':'')
+    + '<div class="mv-meta"><span class="rate">★ '+(m.rating||'—')+'</span><span>'+escTx(m.year)+'</span>'
+    + (m.runtime?'<span>'+m.runtime+' мин</span>':'')
+    + (m.seasons?'<span>'+m.seasons+' '+plural(m.seasons,'сезон','сезона','сезонов')+'</span>':'')
+    + (m.genres||[]).slice(0,3).map(g=>'<span class="q">'+escTx(g)+'</span>').join('') + '</div>'
+    + '<div class="mv-btns"><button class="btn primary" id="mvWatch">'+ICO.play+' Смотреть</button>'
+    + '<button class="btn" id="mvFav">'+(fav?ICO.check+' В избранном':ICO.plus+' В избранное')+'</button></div>'
+    + '<div class="mv-desc">'+escTx(m.desc)+'</div>';
+  if(m.cast && m.cast.length){
+    html += '<div class="mv-sec">В ролях</div><div class="row__line">'
+      + m.cast.map(c=>'<div class="card" style="width:7em"><div class="card__poster">'
+        + (c.profile_path?'<img loading="lazy" src="'+IMG+'w185'+c.profile_path+'" alt="">':'')
+        + '</div><div class="card__title" style="font-size:.82em">'+escTx(c.name)+'</div></div>').join('')
+      + '</div>';
+  }
+  html += '</div></div>';
+  box.innerHTML = html;
+  $('#mvWatch').onclick = ()=>chooseSource(m);
+  $('#mvFav').onclick = ()=>toggleFav(m);
+}
+function chooseSource(m){
+  openSheet('Источник', [
+    {t:'Lumio', s:'онлайн-источники'},
+    {t:'Filmix 4k', s:'качество до 1080p'},
+    {t:'Alpac', s:'требуется токен'},
+    {t:'Торренты', s:'через TorrServer'},
+  ], i=>openView(['lumio','fx','alpac','tor'][i], m));
+}
+
+/* ================= ПОИСК ================= */
+const KB_ROWS = [
+  ['1','2','3','4','5','6','7','8','9','0'],
+  ['й','ц','у','к','е','н','г','ш','щ','з','х'],
+  ['ф','ы','в','а','п','р','о','л','д','ж','э'],
+  ['я','ч','с','м','и','т','ь','б','ю','⌫'],
+  ['a','b','c','d','e','f','g','h','i','j','k','l','m'],
+  ['n','o','p','q','r','s','t','u','v','w','x','y','z','␣'],
+];
+let searchQ = '';
+function kbHTML(){
+  return '<div class="kb">'+KB_ROWS.map(r=>'<div class="kb__row">'
+    + r.map(k=>'<button class="kb-key'+(k==='␣'?' wide':'')+'" data-k="'+k+'">'+(k==='␣'?'пробел':k)+'</button>').join('')
+    + '</div>').join('')+'</div>';
+}
+function renderSearch(){
+  const box = $('#scr-search');
+  box.innerHTML = '<div class="h1">Поиск</div>'
+    + '<div class="search-box"><div class="search-input" id="sInput" tabindex="0">'
+    + (escTx(searchQ)||'<span style="color:var(--muted)">Название…</span>')
+    + '</div><button class="btn primary" id="sGo">'+ICO.search+' Найти</button></div>'
+    + kbHTML() + '<div class="grid" id="sGrid"></div>';
+  const upd = ()=>{ $('#sInput').innerHTML = escTx(searchQ)||'<span style="color:var(--muted)">Название…</span>'; };
+  box.querySelectorAll('.kb-key').forEach(k=>k.onclick=()=>{
+    const c = k.dataset.k;
+    if(c==='⌫') searchQ = searchQ.slice(0,-1);
+    else if(c==='␣') searchQ += ' ';
+    else searchQ += c;
+    upd();
+  });
+  $('#sGo').onclick = doSearch;
+  $('#sInput').onclick = doSearch;
+}
+async function doSearch(){
+  if(!searchQ.trim()){ toast('Введи название'); return; }
+  const grid = $('#sGrid');
+  grid.innerHTML = '<div class="load"><div class="spin"></div>Ищу…</div>';
+  try{
+    const j = await tmdb('/search/multi?query='+encodeURIComponent(searchQ.trim()));
+    const items = (j.results||[]).filter(r=>r.media_type==='movie'||r.media_type==='tv')
+      .map(r=>norm(r, r.media_type));
+    grid.innerHTML = items.length ? items.map(m=>cardHTML(m)).join('') : '<div class="empty">Ничего не нашлось 😕</div>';
+    bindCards(grid);
+    const f = grid.querySelector('.card'); if(f) navFocus(f);
+  }catch(e){ grid.innerHTML = '<div class="empty">Ошибка поиска 😕</div>'; }
+}
+
+/* ================= ИЗБРАННОЕ / ИСТОРИЯ ================= */
+function renderFav(){
+  const box = $('#scr-fav'), items = state.favs.like;
+  box.innerHTML = '<div class="h1">Избранное · '+items.length+'</div>' +
+    (items.length ? '<div class="grid">'+items.map(m=>cardHTML(m)).join('')+'</div>'
+      : '<div class="empty">Пока пусто.<br>Отмечай ❤ на странице фильма.</div>');
+  bindCards(box);
+}
+function renderHist(){
+  const box = $('#scr-hist'), items = state.history;
+  box.innerHTML = '<div class="h1">История</div>' +
+    (items.length
+      ? '<div style="margin-bottom:1em"><button class="btn" id="hClear">Очистить</button></div><div class="grid">'+items.map(m=>cardHTML(m)).join('')+'</div>'
+      : '<div class="empty">Ты ещё ничего не открывал</div>');
+  bindCards(box);
+  const c = $('#hClear');
+  if(c) c.onclick = ()=>{ state.history=[]; LS.set('history',[]); renderHist(); toast('История очищена'); };
+}
+
+/* ================= НАСТРОЙКИ ================= */
+function renderSettings(){
+  const box = $('#scr-settings');
+  const row = (id,t,s,v)=>'<button class="set-row" data-id="'+id+'"><div><div class="set-row__t">'+t+'</div>'
+    + '<div class="set-row__s">'+s+'</div></div><div class="val">'+(v?'••••••':'—')+'</div></button>';
+  box.innerHTML = '<div class="h1">Настройки</div><div class="set">'
+    + '<div class="set-cap">Ключи</div>'
+    + row('tmdb','TMDB API','ключ с themoviedb.org — каталог, постеры', state.tmdbKey)
+    + row('fx','Filmix токен','для источника Filmix 4k', state.fxToken)
+    + '<div class="set-cap">Торренты</div>'
+    + row('ts','TorrServer','адрес сервера, напр. http://192.168.1.5:8090', state.tsUrl)
+    + '<div class="set-cap">Приложение</div>'
+    + '<div style="margin-bottom:1em;color:var(--muted)">Ключи общие с «Кино» — можно ввести в приложении на телефоне, здесь подтянутся сами.</div>'
+    + '</div>';
+  box.querySelectorAll('.set-row').forEach(b=>b.onclick=()=>{
+    const id = b.dataset.id;
+    const cur = {tmdb:state.tmdbKey, fx:state.fxToken, ts:state.tsUrl}[id] || '';
+    askText({tmdb:'TMDB API-ключ', fx:'Filmix токен', ts:'Адрес TorrServer'}[id], cur, v=>{
+      if(id==='tmdb'){ state.tmdbKey=v.trim(); LS.set('tmdb_key',state.tmdbKey); HOME.rows=[]; }
+      if(id==='fx'){ state.fxToken=v.trim(); LS.set('fx_token',state.fxToken); }
+      if(id==='ts'){ state.tsUrl=v.trim()||'http://127.0.0.1:8090'; LS.set('ts_url',state.tsUrl); }
+      renderSettings();
+      toast('Сохранено');
+    });
+  });
+}
+function askText(title, cur, cb){
+  searchQ = cur || '';
+  openSheet(title, [], ()=>{});
+  $('#sheetBox').innerHTML = '<div class="sheet__t">'+escTx(title)+'</div>'
+    + '<div class="search-input" style="margin-bottom:1em" id="aInput">'+escTx(searchQ)+'</div>'
+    + kbHTML()
+    + '<div style="display:flex;gap:.8em;margin-top:1em"><button class="btn primary" id="aOk">Готово</button>'
+    + '<button class="btn" id="aCancel">Отмена</button></div>';
+  const upd = ()=>{ $('#aInput').textContent = searchQ; };
+  $('#sheetBox').querySelectorAll('.kb-key').forEach(k=>k.onclick=()=>{
+    const c = k.dataset.k;
+    if(c==='⌫') searchQ = searchQ.slice(0,-1);
+    else if(c==='␣') searchQ += ' ';
+    else searchQ += c;
+    upd();
+  });
+  $('#aOk').onclick = ()=>{ const v=searchQ; closeSheet(); cb(v); };
+  $('#aCancel').onclick = ()=>closeSheet();
+  const f = $('#sheetBox .kb-key'); if(f) navFocus(f);
+}
+
+/* ================= ПЛЕЕР ================= */
+let plHls = null, plHideT = 0;
+function openPlayer(url, title){
+  const P = $('#player'), v = $('#pvVideo');
+  if(!P || !v) return;
+  $('#pvTitle').textContent = title || '';
+  P.classList.add('on');
+  if(plHls){ try{plHls.destroy();}catch(e){} plHls = null; }
+  try{ v.pause(); }catch(e){}
+  v.removeAttribute('src'); v.load();
+  const start = ()=>{ pvShowUI(); v.play().catch(()=>{}); };
+  if(/\.m3u8($|\?)/i.test(url) && window.Hls && Hls.isSupported()){
+    plHls = new Hls({maxBufferLength:30});
+    plHls.loadSource(url); plHls.attachMedia(v);
+    plHls.on(Hls.Events.MANIFEST_PARSED, start);
+    plHls.on(Hls.Events.ERROR, (ev,data)=>{ if(data && data.fatal) toast('Ошибка потока 😕'); });
+  } else { v.src = url; start(); }
+  buildPvBtns();
+  v.ontimeupdate = pvTick;
+  v.onplay = ()=>{ pvShowUI(); updPvPlay(); };
+  v.onpause = ()=>{ pvShowUI(); updPvPlay(); };
+  v.onclick = ()=>pvToggleUI();
+}
+function buildPvBtns(){
+  $('#pvRow').innerHTML =
+    '<button class="pv-btn" data-a="back">'+ICO.back+'</button>'
+    + '<button class="pv-btn" data-a="rw"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M11 17l-5-5 5-5M18 17l-5-5 5-5"/></svg></button>'
+    + '<button class="pv-btn" data-a="play" id="pvPlayBtn">'+ICO.play+'</button>'
+    + '<button class="pv-btn" data-a="ff"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M13 17l5-5-5-5M6 17l5-5-5-5"/></svg></button>'
+    + '<div class="pv-time" id="pvTime">0:00 / 0:00</div>';
+  $('#pvRow').querySelectorAll('.pv-btn').forEach(b=>b.onclick=()=>pvAct(b.dataset.a));
+  updPvPlay();
+}
+function updPvPlay(){
+  const b = $('#pvPlayBtn'); if(!b) return;
+  const v = $('#pvVideo');
+  b.innerHTML = (v && !v.paused)
+    ? '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg>'
+    : ICO.play;
+}
+function pvAct(a){
+  const v = $('#pvVideo');
+  if(a==='back') closePlayer();
+  else if(a==='play'){ v.paused ? v.play().catch(()=>{}) : v.pause(); }
+  else if(a==='rw'){ v.currentTime = Math.max(0, v.currentTime-10); }
+  else if(a==='ff'){ try{ v.currentTime = Math.min(v.duration||0, v.currentTime+10); }catch(e){} }
+  pvShowUI();
+}
+function pvShowUI(){
+  $('#player').classList.add('showui');
+  clearTimeout(plHideT);
+  plHideT = setTimeout(()=>$('#player').classList.remove('showui'), 3200);
+}
+function pvToggleUI(){
+  const P = $('#player');
+  if(P.classList.contains('showui')) P.classList.remove('showui');
+  else pvShowUI();
+}
+function pvTick(){
+  const v = $('#pvVideo'); if(!v || !v.duration) return;
+  const f = t=>{ t=Math.max(0,Math.floor(t||0)); return Math.floor(t/60)+':'+String(t%60).padStart(2,'0'); };
+  const fill = $('#pvFill'), tm = $('#pvTime');
+  if(fill) fill.style.width = (v.currentTime/v.duration*100)+'%';
+  if(tm) tm.textContent = f(v.currentTime)+' / '+f(v.duration);
+}
+function closePlayer(){
+  const v = $('#pvVideo');
+  try{ v.pause(); }catch(e){}
+  if(plHls){ try{plHls.destroy();}catch(e){} plHls = null; }
+  $('#player').classList.remove('on','showui');
+}
+/* клавиши в плеере — перехватываем до навигации (capture) */
+document.addEventListener('keydown', e=>{
+  if(!$('#player').classList.contains('on')) return;
+  e.stopPropagation();
+  const k = e.key;
+  if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Enter',' '].indexOf(k)!==-1) e.preventDefault();
+  if(k==='ArrowLeft'){ pvAct('rw'); }
+  else if(k==='ArrowRight'){ pvAct('ff'); }
+  else if(k==='ArrowUp' || k==='ArrowDown'){ pvShowUI(); }
+  else if(k==='Enter' || k===' '){ pvAct('play'); }
+  else if(k==='Escape' || e.keyCode===461 || e.keyCode===10009){ closePlayer(); }
+}, true);
+
+/* ================= BOOT ================= */
+buildSidebar();
+buildScreens();
+goScreen('home');
+
+
+/* shim: kino-сигнатура openOptSheet -> kinotv openSheet */
+function openOptSheetK(title, opts, cur, cb){
+  if(typeof cur === 'function'){ cb = cur; }
+  openSheet(title, opts.map(o=>({t:o.t, s:o.s})), cb||(()=>{}));
+}
+const VW_NAMES = {tor:'Торренты', lumio:'Lumio', fx:'Filmix 4k', alpac:'Alpac'};
+let vw = null;
+function vwGetW(){ return LS.get('vw', {}); }
+function vwMarkW(mid, key){
+  const w = vwGetW(); const a = w[mid] || [];
+  if(a.indexOf(key)===-1){ a.push(key); w[mid] = a; LS.set('vw', w); }
+}
+function vwIsW(mid, key){ const w = vwGetW(); return (w[mid]||[]).indexOf(key)!==-1; }
+function vwCountW(mid, total){ const w = vwGetW(); return Math.min((w[mid]||[]).length, total||0); }
+
+/* --- общая шторка выбора --- */
+
+
+/* --- каркас экрана --- */
+function vwShellHTML(){
+  const m = vw.m;
+  return `
+  <div class="vw-head">
+    <div style="flex:1;min-width:0">
+      <div class="vw-kicker">${VW_NAMES[vw.kind]||''}</div>
+      <div class="vw-title">${escTx(m.title)}</div>
+      <div class="vw-meta"><span class="rate">★ ${m.rating||'—'}</span> · ${m.year||''}
+      ${m.seasons?` · ${m.seasons} ${plural(m.seasons,'сезон','сезона','сезонов')}`:''}</div>
+    </div>
+    <span class="vw-q" id="vwQ" style="display:none"></span>
+  </div>
+  <button class="vw-watch" id="vwWatch" style="display:none">${ICO.play}<span id="vwWatchT">Смотреть</span></button>
+  <div class="vw-sub" id="vwSub"></div>
+  <div class="vw-pills" id="vwPills"></div>
+  <div id="vwList"></div>`;
+}
+function openView(kind, m){
+  try{ if(vw && vw.alpacPoll) clearInterval(vw.alpacPoll); }catch(_){}
+  vw = {kind, m, token: Math.random()};
+  goScreen('view');
+  const sc = $('#scr-view');
+  sc.innerHTML = vwShellHTML();
+  
+  
+  if(kind==='tor') vwTorInit();
+  else if(kind==='lumio') vwLumioInit();
+  else if(kind==='fx') vwFxInit();
+  else if(kind==='alpac') vwAlpacInit();
+}
+function vwAlive(tok){ return vw && vw.token===tok; }
+function vwLoading(t){ const l = $('#vwList'); if(l) l.innerHTML = `<div class="vw-load">${t||'Загружаю…'}</div>`; }
+function vwEmpty(t){ const l = $('#vwList'); if(l) l.innerHTML = `<div class="vw-load">${t||'Ничего не нашлось 😕'}</div>`; }
+function vwPillsHTML(pills){
+  const el = $('#vwPills'); if(!el) return;
+  el.innerHTML = pills.map((p,i)=>`<button class="vw-pill" data-i="${i}">${escTx(p.label)} <span class="pv">${escTx(p.value)}</span><span class="pd">▾</span></button>`).join('');
+  el.querySelectorAll('.vw-pill').forEach(b=>b.onclick=()=>pills[+b.dataset.i].onPick());
+}
+function vwSetWatch(label, onclick){
+  const w = $('#vwWatch'); if(!w) return;
+  if(!label){ w.style.display='none'; w.onclick=null; return; }
+  w.style.display='flex';
+  $('#vwWatchT').textContent = label;
+  w.onclick = onclick;
+}
+function vwSetSub(html){ const s = $('#vwSub'); if(s) s.innerHTML = html||''; }
+function vwSetQ(q){ const e = $('#vwQ'); if(!e) return; if(q){ e.style.display=''; e.textContent=q; } else e.style.display='none'; }
+
+/* --- выбор: внутренний плеер или VLC --- */
+function vwAskPlayer(url, title, subs, mv, info){
+  openSheet('Чем открыть?', [
+    {t:'Встроенный плеер', s:'плеер Пацюк Кино'},
+    {t:'VLC', s:'внешнее приложение'}
+  ], i=>{
+    if(i===1) openExternal(url, ()=>{ toast('VLC не открылся · включаю встроенный плеер'); openPlayer(url, title, subs, mv, info); });
+    else openPlayer(url, title, subs, mv, info);
+  });
+}
+
+/* =================== LUMIO =================== */
+function onlCleanName(s){
+  return String(s||'').replace(/<[^>]*>/g,'').trim();
+}
+function onlParams(m){
+  const q = [];
+  q.push('id='+encodeURIComponent(m.id||''));
+  q.push('title='+encodeURIComponent(m.title||''));
+  q.push('original_title='+encodeURIComponent(m.orig||''));
+  q.push('serial='+(m.media==='tv'?1:0));
+  q.push('year='+String(m.date||'').slice(0,4));
+  q.push('source=tmdb');
+  q.push('rchtype=');
+  return q.join('&');
+}
+function onlParse(html){
+  const dom = new DOMParser().parseFromString(html, 'text/html');
+  const out = [];
+  dom.querySelectorAll('.videos__item[data-json]').forEach(el=>{
+    let j = null;
+    try{ j = JSON.parse(el.getAttribute('data-json')); }catch(_){}
+    if(!j || !j.url) return;
+    const t = el.querySelector('.videos__item-title');
+    out.push({
+      method: j.method || 'play',
+      url: j.url,
+      title: (t ? t.textContent.trim() : '') || j.translate || j.title || 'Смотреть',
+      voice: j.translate || ''
+    });
+  });
+  return out;
+}
+async function vwLumioInit(){
+  const tok = vw.token, m = vw.m;
+  vw.srcs = []; vw.srcIdx = 0; vw.seasons = []; vw.seasonIdx = 0; vw.eps = [];
+  vwPillsHTML([]); vwSetWatch(null); vwSetSub(''); vwSetQ('');
+  vwLoading('Ищу источники…');
+  try{
+    const r = await fetch(MITSU + '/lite/events?life=false&' + onlParams(m));
+    if(!r.ok) throw new Error('http');
+    const arr = await r.json();
+    const srcs = (Array.isArray(arr)?arr:[]).filter(s=>s && s.show!==false && s.url);
+    if(!vwAlive(tok)) return;
+    if(!srcs.length){ vwEmpty('Источников не нашлось 😕'); return; }
+    vw.srcs = srcs;
+    vwLumioLoad(0, tok);
+  }catch(e){ if(vwAlive(tok)) vwEmpty('Не получилось связаться с источником 😕'); }
+}
+async function vwLumioLoad(srcIdx, tok){
+  vw.srcIdx = srcIdx;
+  const s = vw.srcs[srcIdx];
+  const url = s.url + (s.url.includes('?')?'&':'?') + onlParams(vw.m);
+  vwLoading('Загружаю…');
+  try{
+    const r = await fetch(url);
+    if(!r.ok) throw new Error('http');
+    const items = onlParse(await r.text());
+    if(!vwAlive(tok)) return;
+    if(!items.length){ vwEmpty('Тут пусто 😕'); return; }
+    if(items[0].method==='play'){ vw.voices = items; vwLumioRenderVoices(); }
+    else { vw.seasons = items; vw.seasonIdx = 0; vwLumioLoadSeason(0, tok); }
+  }catch(e){ if(vwAlive(tok)) vwEmpty('Ошибка загрузки 😕'); }
+}
+async function vwLumioLoadSeason(si, tok){
+  vw.seasonIdx = si;
+  vwLoading('Загружаю серии…');
+  try{
+    const r = await fetch(vw.seasons[si].url);
+    if(!r.ok) throw new Error('http');
+    const items = onlParse(await r.text());
+    if(!vwAlive(tok)) return;
+    vw.eps = items;
+    vwLumioRenderEps();
+  }catch(e){ if(vwAlive(tok)) vwEmpty('Ошибка загрузки 😕'); }
+}
+function vwSrcName(s, i){ return onlCleanName(s.name) || ('Источник '+(i+1)); }
+function vwSeasonName(sn, i){
+  const t = onlCleanName(sn.title||'');
+  const mm = t.match(/(\d+)/);
+  return mm ? mm[1]+' сезон' : (t || ((i+1)+' сезон'));
+}
+function vwEpName(ep, i){
+  const t = onlCleanName(ep.title||'');
+  const mm = t.match(/(\d+)/);
+  return {num: mm?mm[1]:String(i+1), title: t||('Серия '+(i+1))};
+}
+function vwLumioPills(){
+  const pills = [];
+  pills.push({label:'Источник', value: vwSrcName(vw.srcs[vw.srcIdx], vw.srcIdx),
+    onPick: ()=>openOptSheetK('Источник', vw.srcs.map((x,i)=>({t: vwSrcName(x,i), s: onlCleanName(x.balanser||'')})), vw.srcIdx,
+      i=>{ if(i!==vw.srcIdx) vwLumioLoad(i, vw.token); })});
+  if(vw.seasons && vw.seasons.length){
+    pills.push({label:'Сезон', value: vwSeasonName(vw.seasons[vw.seasonIdx], vw.seasonIdx),
+      onPick: ()=>openOptSheetK('Сезон', vw.seasons.map((x,i)=>({t: vwSeasonName(x,i)})), vw.seasonIdx,
+        i=>{ if(i!==vw.seasonIdx) vwLumioLoadSeason(i, vw.token); })});
+  }
+  vwPillsHTML(pills);
+}
+function vwLumioRenderEps(){
+  if(!vw || vw.kind!=='lumio') return;
+  vwLumioPills();
+  const m = vw.m, sNum = vw.seasonIdx;
+  const total = vw.eps.length;
+  const watched = vwCountW('l'+m.id, total);
+  let target = vw.eps.findIndex((e,i)=>!vwIsW('l'+m.id, 's'+sNum+'e'+i));
+  if(target===-1) target = 0;
+  const epT = vw.eps.length ? vwEpName(vw.eps[target], target) : null;
+  vwSetWatch(epT ? 'Смотреть · '+epT.num+' серия' : null, epT ? ()=>vwLumioPlayEp(target) : null);
+  vwSetSub(`<b>${escTx(vwSrcName(vw.srcs[vw.srcIdx], vw.srcIdx))}</b> · ${escTx(vwSeasonName(vw.seasons[vw.seasonIdx], vw.seasonIdx))}<br>Просмотрено ${watched} из ${total} · осталось ${total-watched}`);
+  const el = $('#vwList'); if(!el) return;
+  el.innerHTML = `<div class="vw-sec-t">Серии · ${total}</div><div class="vw-list">` + vw.eps.map((e,i)=>{
+    const et = vwEpName(e, i);
+    const w = vwIsW('l'+m.id, 's'+sNum+'e'+i);
+    return `<button class="vw-ep" data-i="${i}">
+      <span class="vw-thumb" data-ep="${escTx(et.num)}"><span class="vw-num">${escTx(et.num)}</span></span>
+      <span class="vw-epbody">
+        <span class="vw-ept">${escTx(et.title)}</span>
+        <span class="vw-eps">${e.voice?escTx(e.voice):(e.method==='play'?'смотреть':'')}</span>
+        <span class="vw-prog"><i style="width:${w?100:0}%"></i></span>
+      </span>
+      ${w?'<span class="vw-side"><span class="vw-done">✓</span></span>':''}
+    </button>`;
+  }).join('') + '</div>';
+  el.querySelectorAll('.vw-ep').forEach(b=>b.onclick=()=>vwLumioPlayEp(+b.dataset.i));
+  vwEpStills(m, vwLumioSeasonNum(), el, false);
+  vw.render = vwLumioRenderEps;
+}
+async function vwLumioPlayEp(ei){
+  const tok = vw.token;
+  const ep = vw.eps[ei]; if(!ep) return;
+  vwLoading('Загружаю озвучки…');
+  try{
+    let voices;
+    if(ep.method==='play') voices = [{title: ep.title, voice: ep.voice, url: ep.url}];
+    else {
+      const r = await fetch(ep.url);
+      if(!r.ok) throw new Error('http');
+      voices = onlParse(await r.text()).filter(i=>i.method==='play');
+    }
+    if(!vwAlive(tok)) return;
+    if(!voices.length){ vwEmpty('Озвучек не нашлось 😕'); setTimeout(()=>{ if(vwAlive(tok)) vwLumioRenderEps(); }, 1200); return; }
+    if(voices.length===1){ vwLumioPlay(voices[0], ei); return; }
+    vw.voices = voices; vw.epIdx = ei;
+    vwLumioRenderVoices();
+  }catch(e){ if(vwAlive(tok)) vwEmpty('Ошибка загрузки 😕'); }
+}
+function vwLumioRenderVoices(){
+  if(!vw || vw.kind!=='lumio') return;
+  vwLumioPills();
+  const items = vw.voices, m = vw.m;
+  const isTv = m.media==='tv';
+  const epT = (isTv && vw.eps && vw.eps[vw.epIdx]) ? vwEpName(vw.eps[vw.epIdx], vw.epIdx) : null;
+  vwSetWatch(isTv?null:'Смотреть', isTv?null:()=>vwLumioPlay(items[0], -1));
+  vwSetSub(`<b>${escTx(vwSrcName(vw.srcs[vw.srcIdx], vw.srcIdx))}</b>` +
+    (isTv && epT ? ` · ${escTx(vwSeasonName(vw.seasons[vw.seasonIdx], vw.seasonIdx))} · серия ${escTx(epT.num)}` : ''));
+  const el = $('#vwList'); if(!el) return;
+  el.innerHTML = (isTv?`<button class="vw-backline" id="vwToEps">‹ Серии</button>`:'') +
+    `<div class="vw-sec-t">Озвучка${epT?' · серия '+escTx(epT.num):''}</div><div class="vw-list">` +
+    items.map((it,i)=>{
+      const sub = it.voice && it.voice!==it.title ? `<div class="vs">${escTx(it.voice)}</div>` : '';
+      return `<button class="vw-voice" data-i="${i}"><span>${escTx(it.title)}${sub}</span><span style="color:var(--muted);font-size:19px;flex:0 0 auto">›</span></button>`;
+    }).join('') + '</div>';
+  const back = $('#vwToEps'); if(back) back.onclick = ()=>vwLumioRenderEps();
+  el.querySelectorAll('.vw-voice').forEach(b=>b.onclick=()=>vwLumioPlay(items[+b.dataset.i], isTv?vw.epIdx:-1));
+  vw.render = isTv ? vwLumioRenderEps : vwLumioRenderVoices;
+}
+function vwLumioPlay(it, ei){
+  const m = vw.m;
+  if(m.media==='tv' && ei>=0) vwMarkW('l'+m.id, 's'+vw.seasonIdx+'e'+ei);
+  const epT = (ei>=0 && vw.eps && vw.eps[ei]) ? vwEpName(vw.eps[ei], ei) : null;
+  const title = m.title + (epT ? ' · серия '+epT.num : '') + (it.title ? ' · '+it.title : '');
+  vwAskPlayer(it.url, title, [], m, {
+    file: it.title || '',
+    source: 'Lumio · ' + vwSrcName(vw.srcs[vw.srcIdx], vw.srcIdx),
+    voice: it.voice || '',
+  });
+}
+
+/* =================== ALPAC =================== */
+const ALPAC = 'https://beta.l-vid.online';
+function alpacUid(){
+  let u = LS.get('alpac_uid','');
+  if(!/^[0-9a-f]{12}$/.test(u||'')){
+    try{
+      const a = new Uint8Array(6);
+      if(window.crypto && crypto.getRandomValues) crypto.getRandomValues(a);
+      else for(let i=0;i<6;i++) a[i] = Math.floor(Math.random()*256);
+      u = Array.from(a).map(b=>('0'+b.toString(16)).slice(-2)).join('');
+    }catch(_){ u = (Math.random().toString(16).slice(2)+Date.now().toString(16)).slice(0,12); }
+    LS.set('alpac_uid', u);
+  }
+  return u;
+}
+function alpacToken(){ return String(LS.get('alpac_token','')||'').trim(); }
+function alpacAbs(u){ u = String(u||''); return /^https?:\/\//i.test(u) ? u : ALPAC + (u.charAt(0)==='/' ? u : '/'+u); }
+function alpacParams(m){
+  const q = [];
+  q.push('id='+encodeURIComponent(String(m.id||'').replace(/^tv/,'')));
+  q.push('title='+encodeURIComponent(m.title||''));
+  q.push('original_title='+encodeURIComponent(m.orig||''));
+  q.push('serial='+(m.media==='tv'?1:0));
+  q.push('year='+String(m.date||'').slice(0,4));
+  q.push('source=tmdb'); q.push('rchtype=');
+  return q.join('&');
+}
+function alpacAuthQS(){
+  let q = 'uid='+encodeURIComponent(alpacUid());
+  const t = alpacToken();
+  if(t) q += '&token='+encodeURIComponent(t);
+  return q;
+}
+function alpacBestQ(q){
+  let best = '', bestN = -1;
+  Object.keys(q||{}).forEach(k=>{
+    const mm = String(k).match(/(\d{3,4})/);
+    const n = mm ? +mm[1] : 0;
+    if(n >= bestN){ bestN = n; best = q[k]; }
+  });
+  return best || q[Object.keys(q||{})[0]] || '';
+}
+function alpacSaveToken(j){
+  const t = j && (j.token || j.access_token || j.auth_token || (j.data && j.data.token));
+  if(typeof t==='string' && t.trim()){ LS.set('alpac_token', t.trim()); return true; }
+  return false;
+}
+function alpacHeaders(){
+  const t = alpacToken();
+  return t ? {'X-Alpac-Token': t, 'X-Lampac-Token': t} : {};
+}
+async function alpacFetchEvents(m){
+  const r = await fetch(ALPAC+'/lite/events?life=true&'+alpacParams(m)+'&'+alpacAuthQS(), {headers: alpacHeaders()});
+  if(!r.ok) throw new Error('http');
+  return r.json();
+}
+async function vwAlpacInit(){
+  try{ if(vw && vw.alpacPoll) clearInterval(vw.alpacPoll); }catch(_){}
+  const tok = vw.token, m = vw.m;
+  vw.srcs = []; vw.srcIdx = 0; vw.seasons = []; vw.seasonIdx = 0; vw.eps = []; vw.voices = [];
+  vwPillsHTML([]); vwSetWatch(null); vwSetSub(''); vwSetQ('');
+  vwLoading('Подключаюсь к Alpac…');
+  try{
+    const ev = await alpacEvents(m, tok);
+    if(!vwAlive(tok)) return;
+    if(ev.auth){ vwAlpacAuth(ev.auth, tok); return; }
+    if(!ev.sources.length){ vwEmpty('Источников не нашлось 😕'); return; }
+    vw.srcs = ev.sources;
+    if(ev.sources.length===1) vwAlpacLoad(0, tok);
+    else vwAlpacRenderSources(tok);
+  }catch(e){ if(vwAlive(tok)) vwEmpty('Не получилось связаться с Alpac 😕'); }
+}
+async function alpacEvents(m, tok){
+  let j = await alpacFetchEvents(m);
+  if(j && j.accsdb && alpacSaveToken(j)) j = await alpacFetchEvents(m);
+  if(j && j.accsdb) return {auth:j};
+  if(j && j.life && j.memkey){
+    let best = [], stable = 0;
+    for(let i=0;i<24;i++){
+      if(i>0) await new Promise(r2=>setTimeout(r2, 1500));
+      if(!vwAlive(tok)) throw new Error('gone');
+      let r3 = null;
+      try{ r3 = await fetch(ALPAC+'/lifeevents?memkey='+encodeURIComponent(j.memkey)+'&'+alpacAuthQS(), {headers: alpacHeaders()}); }catch(_){ continue; }
+      if(!r3.ok) continue;
+      const j3 = await r3.json().catch(()=>null);
+      if(!j3) continue;
+      if(j3.accsdb){ alpacSaveToken(j3); return {auth:j3}; }
+      const onl = Array.isArray(j3.online) ? j3.online : (Array.isArray(j3) ? j3 : []);
+      if(onl.length > best.length){ best = onl; stable = 0; } else { stable++; }
+      if(j3.ready || stable>=3) break;
+    }
+    j = best;
+  }
+  if(j && j.accsdb) return {auth:j};
+  const arr = Array.isArray(j) ? j : [];
+  if(arr.length){
+    try{
+      const r4 = await fetch(ALPAC+'/tg/auth/status?uid='+encodeURIComponent(alpacUid()), {headers: alpacHeaders()});
+      if(r4.ok){ const j4 = await r4.json(); if(j4 && j4.authorized && j4.token) LS.set('alpac_token', j4.token); }
+    }catch(_){}
+  }
+  return {sources: arr.filter(s=>s && s.show!==false && s.url)};
+}
+function vwAlpacAuth(er, tok){
+  if(!vw || vw.kind!=='alpac') return;
+  try{ if(vw.alpacPoll) clearInterval(vw.alpacPoll); }catch(_){}
+  alpacSaveToken(er);
+  vwPillsHTML([]); vwSetWatch(null);
+  vwSetSub('Вход через Telegram');
+  const el = $('#vwList'); if(!el) return;
+  el.innerHTML = `<div class="alp-auth">
+    ${er.qr?`<img class="alp-qr" src="${er.qr}" alt="QR">`:''}
+    <div class="alp-code">${escTx(er.code||'')}</div>
+    <div class="alp-msg">Отправь этот код боту <b>${escTx(er.bot||'@go_lampa_testbot')}</b> в Telegram<br>или просто сканируй QR</div>
+    <div class="alp-status" id="alpStatus"><span class="alp-dot"></span>Жду подтверждения…</div>
+    <button class="alp-refresh" id="alpRefresh">Обновить код</button>
+  </div>`;
+  $('#alpRefresh').onclick = ()=>vwAlpacInit();
+  vw.alpacPoll = setInterval(async ()=>{
+    if(!vwAlive(tok)){ try{ clearInterval(vw.alpacPoll); }catch(_){} return; }
+    try{
+      const r = await fetch(ALPAC+'/tg/auth/check?code='+encodeURIComponent(er.code||''));
+      if(!r.ok) return;
+      const j = await r.json();
+      if(!j) return;
+      const st = $('#alpStatus');
+      if(j.status==='approved' && j.token){
+        try{ clearInterval(vw.alpacPoll); }catch(_){}
+        alpacSaveToken(j);
+        toast('Alpac подключён ✅');
+        if(vwAlive(tok)) vwAlpacInit();
+      }else if(j.status==='claimed'){
+        if(st) st.innerHTML = '<span class="alp-dot"></span>Код принят, жду одобрения…';
+      }else if(j.status==='rejected'){
+        try{ clearInterval(vw.alpacPoll); }catch(_){}
+        if(st) st.innerHTML = '<span class="alp-dot"></span>Запрос отклонён администратором';
+      }else if(j.status==='expired'){
+        try{ clearInterval(vw.alpacPoll); }catch(_){}
+        if(vwAlive(tok)) vwAlpacInit();
+      }
+    }catch(_){}
+  }, 3000);
+  vw.render = ()=>vwAlpacAuth(er, tok);
+}
+function vwAlpacRenderSources(tok){
+  if(!vw || vw.kind!=='alpac') return;
+  vwPillsHTML([]);
+  vwSetWatch(null);
+  vwSetSub('Alpac · выбери источник');
+  const el = $('#vwList'); if(!el) return;
+  el.innerHTML = `<div class="vw-sec-t">Источники · ${vw.srcs.length}</div><div class="vw-list">` +
+    vw.srcs.map((s,i)=>`<button class="vw-voice" data-i="${i}"><span>${escTx(vwSrcName(s,i))}</span><span style="color:var(--muted);font-size:19px;flex:0 0 auto">›</span></button>`).join('') + '</div>';
+  el.querySelectorAll('.vw-voice').forEach(b=>b.onclick=()=>vwAlpacLoad(+b.dataset.i, tok));
+  vw.render = ()=>vwAlpacRenderSources(tok);
+}
+function vwAlpacMaybeAuth(text, tok){
+  if(text.indexOf('"accsdb"')===-1) return false;
+  try{
+    const j = JSON.parse(text);
+    if(j && j.accsdb){ if(vwAlive(tok)) vwAlpacAuth(j, tok); return true; }
+  }catch(_){}
+  return false;
+}
+async function vwAlpacLoad(si, tok){
+  vw.srcIdx = si;
+  const s = vw.srcs[si];
+  vwLoading('Загружаю…');
+  try{
+    const url = alpacAbs(s.url) + (String(s.url).includes('?')?'&':'?') + alpacParams(vw.m) + '&' + alpacAuthQS();
+    const r = await fetch(url, {headers: alpacHeaders()});
+    if(!r.ok) throw new Error('http');
+    const html = await r.text();
+    if(!vwAlive(tok)) return;
+    if(vwAlpacMaybeAuth(html, tok)) return;
+    vwAlpacGot(html, tok, false);
+  }catch(e){ if(vwAlive(tok)) vwEmpty('Ошибка загрузки 😕'); }
+}
+async function vwAlpacFollow(url, tok, fromVoice){
+  vwLoading('Загружаю…');
+  try{
+    const u = alpacAbs(url) + (String(url).includes('?')?'&':'?') + alpacParams(vw.m) + '&' + alpacAuthQS();
+    const r = await fetch(u, {headers: alpacHeaders()});
+    if(!r.ok) throw new Error('http');
+    if(!vwAlive(tok)) return;
+    const text = await r.text();
+    if(vwAlpacMaybeAuth(text, tok)) return;
+    vwAlpacGot(text, tok, !!fromVoice);
+  }catch(e){ if(vwAlive(tok)) vwEmpty('Ошибка загрузки 😕'); }
+}
+function vwAlpacGot(html, tok, fromVoice){
+  const dom = new DOMParser().parseFromString(html, 'text/html');
+  const items = [], buttons = [];
+  dom.querySelectorAll('.videos__item[data-json]').forEach(el=>{
+    let j = null;
+    try{ j = JSON.parse(el.getAttribute('data-json')); }catch(_){}
+    if(!j || !j.url) return;
+    const s = el.getAttribute('s'), e = el.getAttribute('e');
+    items.push({method: j.method||'play', url: String(j.url),
+      title: onlCleanName(el.textContent).slice(0,140) || j.title || 'Смотреть',
+      season: s!==null ? +s : null, episode: e!==null ? +e : null,
+      quality: (j.quality && typeof j.quality==='object') ? j.quality : null,
+      voice: j.translate || ''});
+  });
+  dom.querySelectorAll('.videos__button[data-json]').forEach(el=>{
+    let j = null;
+    try{ j = JSON.parse(el.getAttribute('data-json')); }catch(_){}
+    if(!j || !j.url) return;
+    buttons.push({title: onlCleanName(el.textContent).slice(0,90) || '—', url: String(j.url), active: el.classList.contains('active')});
+  });
+  const videos = items.filter(i=>i.method==='play' || i.method==='call' || i.method==='iframe');
+  if(videos.length){
+    if(buttons.length && !fromVoice){ vw.voices = buttons; vwAlpacRenderVoices(tok); }
+    else if(vw.m.media==='tv'){ vw.eps = videos; vwAlpacRenderEps(tok); }
+    else { vw.voices = videos; vwAlpacRenderMovieVoices(tok); }
+  } else if(items.length){
+    if(items.length===1 && items[0].method==='link'){ vwAlpacFollow(items[0].url, tok, false); }
+    else { vw.seasons = items; vwAlpacRenderSeasons(tok); }
+  } else {
+    vwEmpty('Тут пусто 😕');
+  }
+}
+function vwAlpacPills(){
+  const pills = [];
+  pills.push({label:'Источник', value: vwSrcName(vw.srcs[vw.srcIdx], vw.srcIdx),
+    onPick: ()=>openOptSheetK('Источник', vw.srcs.map((x,i)=>({t: vwSrcName(x,i), s: onlCleanName(x.balanser||'')})), vw.srcIdx,
+      i=>{ if(i!==vw.srcIdx) vwAlpacLoad(i, vw.token); })});
+  vwPillsHTML(pills);
+}
+function vwAlpacRenderSeasons(tok){
+  if(!vw || vw.kind!=='alpac') return;
+  vwAlpacPills();
+  vwSetWatch(null);
+  vwSetSub(`<b>${escTx(vwSrcName(vw.srcs[vw.srcIdx], vw.srcIdx))}</b> · сезоны`);
+  const el = $('#vwList'); if(!el) return;
+  el.innerHTML = `<div class="vw-sec-t">Сезоны · ${vw.seasons.length}</div><div class="vw-list">` +
+    vw.seasons.map((s,i)=>`<button class="vw-voice" data-i="${i}"><span>${escTx(vwSeasonName(s,i))}</span><span style="color:var(--muted);font-size:19px;flex:0 0 auto">›</span></button>`).join('') + '</div>';
+  el.querySelectorAll('.vw-voice').forEach(b=>b.onclick=()=>{ vw.seasonIdx = +b.dataset.i; vwAlpacFollow(vw.seasons[+b.dataset.i].url, tok, false); });
+  vw.render = ()=>vwAlpacRenderSeasons(tok);
+}
+function vwAlpacRenderVoices(tok){
+  if(!vw || vw.kind!=='alpac') return;
+  vwAlpacPills();
+  vwSetWatch(null);
+  vwSetSub(`<b>${escTx(vwSrcName(vw.srcs[vw.srcIdx], vw.srcIdx))}</b> · озвучка`);
+  const el = $('#vwList'); if(!el) return;
+  el.innerHTML = `<div class="vw-sec-t">Озвучка</div><div class="vw-list">` +
+    vw.voices.map((v,i)=>`<button class="vw-voice" data-i="${i}"><span>${escTx(v.title)}${v.active?' ✓':''}</span><span style="color:var(--muted);font-size:19px;flex:0 0 auto">›</span></button>`).join('') + '</div>';
+  el.querySelectorAll('.vw-voice').forEach(b=>b.onclick=()=>vwAlpacFollow(vw.voices[+b.dataset.i].url, tok, true));
+  vw.render = ()=>vwAlpacRenderVoices(tok);
+}
+function vwAlpacRenderMovieVoices(tok){
+  if(!vw || vw.kind!=='alpac') return;
+  vwAlpacPills();
+  const m = vw.m, items = vw.voices;
+  vwSetWatch(items.length?'Смотреть':null, items.length?()=>vwAlpacPlay(items[0], -1, tok):null);
+  vwSetSub(`<b>${escTx(vwSrcName(vw.srcs[vw.srcIdx], vw.srcIdx))}</b> · озвучка`);
+  const el = $('#vwList'); if(!el) return;
+  el.innerHTML = `<div class="vw-sec-t">Озвучка · ${items.length}</div><div class="vw-list">` +
+    items.map((it,i)=>{
+      const sub = it.voice && it.voice!==it.title ? `<div class="vs">${escTx(it.voice)}</div>` : '';
+      return `<button class="vw-voice" data-i="${i}"><span>${escTx(it.title)}${sub}</span><span style="color:var(--muted);font-size:19px;flex:0 0 auto">›</span></button>`;
+    }).join('') + '</div>';
+  el.querySelectorAll('.vw-voice').forEach(b=>b.onclick=()=>vwAlpacPlay(items[+b.dataset.i], -1, tok));
+  vw.render = ()=>vwAlpacRenderMovieVoices(tok);
+}
+function vwAlpacEpNum(e, i){ return (e.episode!=null && e.episode>0) ? String(e.episode) : String(i+1); }
+function vwAlpacRenderEps(tok){
+  if(!vw || vw.kind!=='alpac') return;
+  vwAlpacPills();
+  const m = vw.m, eps = vw.eps;
+  const sNum = (eps.length && eps[0].season!=null) ? eps[0].season : (vw.seasonIdx+1);
+  const total = eps.length;
+  const watched = vwCountW('a'+m.id, total);
+  let target = eps.findIndex((e,i)=>!vwIsW('a'+m.id, 's'+sNum+'e'+vwAlpacEpNum(e,i)));
+  if(target===-1) target = 0;
+  const epT = eps.length ? vwAlpacEpNum(eps[target], target) : null;
+  vwSetWatch(epT ? 'Смотреть · '+epT+' серия' : null, epT ? ()=>vwAlpacPlay(eps[target], target, tok) : null);
+  vwSetSub(`<b>${escTx(vwSrcName(vw.srcs[vw.srcIdx], vw.srcIdx))}</b> · ${sNum} сезон<br>Просмотрено ${watched} из ${total} · осталось ${total-watched}`);
+  const el = $('#vwList'); if(!el) return;
+  el.innerHTML = (vw.voices && vw.voices.length ? `<button class="vw-backline" id="vwToVoices">‹ Озвучки</button>` : '') +
+    `<div class="vw-sec-t">Серии · ${total}</div><div class="vw-list">` + eps.map((e,i)=>{
+    const num = vwAlpacEpNum(e, i);
+    const w = vwIsW('a'+m.id, 's'+sNum+'e'+num);
+    const sub = (e.voice && e.voice!==e.title) ? e.voice : (e.title && !/^\d+\s*серия/i.test(e.title) ? e.title : '');
+    return `<button class="vw-ep" data-i="${i}">
+      <span class="vw-thumb" data-ep="${escAttr(num)}"><span class="vw-num">${escTx(num)}</span></span>
+      <span class="vw-epbody">
+        <span class="vw-ept">${num} серия</span>
+        <span class="vw-eps">${escTx(sub)}</span>
+        <span class="vw-prog"><i style="width:${w?100:0}%"></i></span>
+      </span>
+      ${w?'<span class="vw-side"><span class="vw-done">✓</span></span>':''}
+    </button>`;
+  }).join('') + '</div>';
+  el.querySelectorAll('.vw-ep').forEach(b=>b.onclick=()=>vwAlpacPlay(eps[+b.dataset.i], +b.dataset.i, tok));
+  const bv = $('#vwToVoices'); if(bv) bv.onclick = ()=>vwAlpacRenderVoices(tok);
+  vwEpStills(m, sNum, el, false);
+  vw.render = ()=>vwAlpacRenderEps(tok);
+}
+async function vwAlpacPlay(it, ei, tok){
+  const m = vw.m;
+  vwLoading('Получаю ссылку…');
+  try{
+    const res = await vwAlpacResolve(it);
+    if(!vwAlive(tok)) return;
+    if(res.iframe){ vwAlpacIframe(res.iframe); return; }
+    if(m.media==='tv' && ei>=0){
+      const sNum = (vw.eps[ei] && vw.eps[ei].season!=null) ? vw.eps[ei].season : (vw.seasonIdx+1);
+      vwMarkW('a'+m.id, 's'+sNum+'e'+vwAlpacEpNum(vw.eps[ei], ei));
+    }
+    const epT = (m.media==='tv' && ei>=0) ? vwAlpacEpNum(vw.eps[ei], ei) : null;
+    const title = m.title + (epT ? ' · серия '+epT : '') + (it.title ? ' · '+it.title : '');
+    vwAskPlayer(res.url, title, res.subs||[], m, {
+      file: it.title || '',
+      source: 'Alpac · ' + vwSrcName(vw.srcs[vw.srcIdx], vw.srcIdx),
+      voice: it.voice || '',
+    });
+  }catch(e){
+    if(!vwAlive(tok)) return;
+    if(e && e.auth){ vwAlpacAuth(e.auth, tok); return; }
+    vwEmpty('Не получилось получить ссылку 😕');
+    setTimeout(()=>{ if(vwAlive(tok) && vw.render) vw.render(); }, 1400);
+  }
+}
+async function vwAlpacResolve(it){
+  if(it.method==='play'){
+    const u = (it.quality ? alpacBestQ(it.quality) : '') || it.url;
+    return {url: u};
+  }
+  if(it.method==='iframe') return {iframe: it.url};
+  const u = alpacAbs(it.url) + (String(it.url).includes('?')?'&':'?') + alpacAuthQS();
+  const r = await fetch(u, {headers: alpacHeaders()});
+  if(!r.ok) throw new Error('http');
+  const j = await r.json();
+  if(j && j.accsdb) throw {auth: j};
+  if(j && j.method==='iframe' && j.url) return {iframe: j.url};
+  if(j && j.url){
+    const qq = (j.quality && typeof j.quality==='object') ? j.quality : ((j.qualitys && typeof j.qualitys==='object') ? j.qualitys : null);
+    return {url: (qq ? alpacBestQ(qq) : '') || j.url, subs: j.subtitles || []};
+  }
+  throw new Error('nolink');
+}
+function vwAlpacIframe(url){
+  const ov = document.createElement('div');
+  ov.style.cssText = 'position:fixed;inset:0;z-index:9999;background:#000';
+  const fr = document.createElement('iframe');
+  fr.setAttribute('src', url);
+  fr.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;border:0;background:#000';
+  fr.setAttribute('allow', 'autoplay; fullscreen; encrypted-media');
+  fr.setAttribute('allowfullscreen', '');
+  const x = document.createElement('button');
+  x.textContent = '✕';
+  x.style.cssText = 'position:absolute;top:14px;left:14px;z-index:2;width:42px;height:42px;border-radius:50%;border:1px solid rgba(255,255,255,.3);background:rgba(0,0,0,.55);color:#fff;font-size:17px;cursor:pointer';
+  x.onclick = ()=>ov.remove();
+  ov.appendChild(fr); ov.appendChild(x);
+  document.body.appendChild(ov);
+}
+
+/* ---------- Студии (ряд на главной) ---------- */
+const STUDIOS = [
+  {id:'netflix', name:'Netflix', mv:{prov:'8',region:'UA'}, tv:{net:'213'}, svg:`<svg viewBox="0 0 256 69" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M35.2 64.726c-3.85.676-7.77.88-11.823 1.42L11.013 29.93V67.7c-3.85.405-7.364.946-11.013 1.486V0h10.27l14.053 39.255V0H35.2v64.726zm21.283-39.39l14.46-.203v10.8l-14.46.203v16.08l19.12-1.15v10.404l-29.93 2.365V0h29.93v10.8h-19.12v14.526zm59.32-14.526H104.59v49.727l-10.8.135V10.81H82.564V0h33.24v10.81zm17.567 13.783h14.797v10.8H133.37V59.93h-10.608V0h30.202v10.8H133.37v13.783zm37.16 25.877c6.15.135 12.364.608 18.377.946V62.09l-29.187-1.42V0h10.8v50.47zm27.5 12.364c3.446.203 7.094.406 10.607.81V0H198.03v62.835zM256 0l-13.716 32.904L256 69.186c-4.054-.54-8.108-1.284-12.162-1.96l-7.77-19.998-7.904 18.378c-3.92-.676-7.703-.88-11.62-1.42l13.918-31.688L217.894 0h11.62l7.094 18.175L244.176 0H256z" fill="#E50914"/></svg>`},
+  {id:'apple', name:'Apple TV+', mv:{prov:'350',region:'UA'}, tv:{net:'2552'}, svg:`<svg viewBox="0 0 24 24" fill="#000000" xmlns="http://www.w3.org/2000/svg"><path d="M20.57 17.735h-1.815l-3.34-9.203h1.633l2.02 5.987c.075.231.273.9.586 2.012l.297-.997.33-1.006 2.094-6.004H24zm-5.344-.066a5.76 5.76 0 0 1-1.55.207c-1.23 0-1.84-.693-1.84-2.087V9.646h-1.063V8.532h1.121V7.081l1.476-.602v2.062h1.707v1.113H13.38v5.805c0 .446.074.75.214.932.14.182.396.264.75.264.207 0 .495-.041.883-.115zm-7.29-5.343c.017 1.764 1.55 2.358 1.567 2.366-.017.042-.248.842-.808 1.658-.487.71-.99 1.418-1.79 1.435-.783.016-1.03-.462-1.93-.462-.89 0-1.17.445-1.913.478-.758.025-1.344-.775-1.838-1.484-.998-1.451-1.765-4.098-.734-5.88.51-.89 1.426-1.451 2.416-1.46.75-.016 1.468.512 1.93.512.461 0 1.327-.627 2.234-.536.38.016 1.452.157 2.136 1.154-.058.033-1.278.743-1.27 2.219M6.468 7.988c.404-.495.685-1.18.61-1.864-.585.025-1.294.388-1.723.883-.38.437-.71 1.138-.619 1.806.652.05 1.328-.338 1.732-.825Z"/></svg>`},
+  {id:'amazon', name:'Prime Video', mv:{co:'210099'}, tv:{net:'1024'}, svg:`<svg viewBox="0 -.1 800.3 246.4" xmlns="http://www.w3.org/2000/svg"><path d="m396.5 246.3v-.4c.4-.5 1.1-.8 1.7-.7 2.9-.1 5.7-.1 8.6 0 .6 0 1.3.2 1.7.7v.4z" fill="#00a8e1"/><path d="m408.5 245.9c-4-.1-8-.1-12 0-5.5-.3-11-.5-16.5-.9-14.6-1.1-29.1-3.3-43.3-6.6-49.1-11.4-92.2-34.3-129.8-67.6-3.5-3.1-6.8-6.3-10.2-9.5-.8-.7-1.5-1.7-1.9-2.7-.6-1.4-.3-2.9.7-4s2.6-1.5 4-.9c.9.4 1.8.8 2.6 1.3 35.9 22.2 75.1 38.4 116.2 48 13.8 3.2 27.7 5.7 41.7 7.5 20.1 2.5 40.4 3.4 60.6 2.7 10.9-.3 21.7-1.3 32.5-2.7 25.2-3.2 50.1-8.9 74.2-16.9 12.7-4.2 25.1-9 37.2-14.6 1.8-1 4-1.3 6-.8 3.3.8 5.3 4.2 4.5 7.5-.1.4-.3.9-.5 1.3-.8 1.5-1.9 2.8-3.3 3.8-11.5 9-23.9 16.9-37 23.5-24.7 12.5-51.1 21.4-78.3 26.5-15.7 2.8-31.5 4.5-47.4 5.1zm-148.1-202.7c2.5-1.5 5.1-3.1 7.8-4.5 7-3.6 14.8-5.4 22.7-5 5.7.3 10.9 1.9 14.9 6.1 3.8 3.9 5.2 8.7 5.6 13.9.1 1.1.1 2.2.1 3.4v51.8c0 4.5-.6 5.1-5.1 5.1h-12.2c-.8 0-1.6 0-2.4-.1-1.2-.1-2.2-1.1-2.4-2.3-.2-1.1-.2-2.2-.2-3.3v-46.3c.1-1.9-.1-3.7-.6-5.5-.8-3.1-3.6-5.3-6.8-5.5-5.9-.4-11.8.8-17.2 3.3-.8.2-1.3 1-1.2 1.8v52.6c0 1 0 1.9-.2 2.9 0 1.4-1.1 2.4-2.5 2.4-1.5.1-3 .1-4.6.1h-10.6c-3.7 0-4.5-.9-4.5-4.6v-47.3c0-1.7-.1-3.5-.5-5.2-.7-3.4-3.6-5.8-7-6-6-.4-12.1.8-17.5 3.4-.8.2-1.3 1.1-1.1 1.9v53.3c0 3.7-.8 4.5-4.5 4.5h-13.4c-3.5 0-4.4-1-4.4-4.4v-69.4c0-.8.1-1.6.3-2.4.4-1.2 1.6-1.9 2.8-1.9h12.5c1.8 0 2.9 1.1 3.5 2.8.5 1.4.8 2.7 1.3 4.2 1 0 1.6-.7 2.3-1.1 5.5-3.4 11.3-6.3 17.8-7.5 5-1 10-1 15 0 4.7 1 8.9 3.8 11.6 7.8.2.3.4.5.6.7-.1.1 0 .1.1.3z" fill="#00a8e1"/><path d="m467.7 93c.6-2 1.2-3.9 1.8-5.9 4.6-15.5 9.2-30.9 13.8-46.4l.6-1.8c.5-1.8 2.2-2.9 4-2.9h15.2c3.8 0 4.6 1.1 3.3 4.7l-6 15.9c-6.7 17.4-13.4 34.9-20.1 52.3-.2.6-.5 1.2-.7 1.8-.7 2.1-2.8 3.5-5 3.3-4.4-.1-8.8-.1-13.2 0-3.1.1-4.9-1.3-6-4.1-2.5-6.6-5.1-13.3-7.6-19.9-6-15.7-12.1-31.4-18.1-47.2-.6-1.2-1-2.6-1.3-3.9-.3-2 .4-3 2.4-3 5.7-.1 11.4 0 17 0 2.4 0 3.5 1.6 4.1 3.7 1.1 3.8 2.2 7.7 3.4 11.5 4.1 13.9 8.1 27.9 12.2 41.8-.1.1 0 .1.2.1z" fill="#000000"/><path d="m112.6 47c.7-.2 1.3-.6 1.7-1.2 1.8-1.8 3.7-3.5 5.7-5.1 5.2-4 11.7-6 18.2-5.5 2.6.1 3.5.9 3.7 3.4.2 3.4.1 6.9.1 10.3.1 1.4 0 2.7-.2 4.1-.4 1.8-1.1 2.5-2.9 2.7-1.4.1-2.7 0-4.1-.1-6.7-.6-13.2.7-19.5 2.8-1.4.5-1.4 1.5-1.4 2.6v48c0 .9 0 1.7-.1 2.6-.1 1.3-1.1 2.3-2.4 2.3-.7.1-1.5.1-2.2.1h-13c-.7 0-1.5 0-2.2-.1-1.3-.1-2.3-1.2-2.4-2.5-.1-.8-.1-1.6-.1-2.4v-68c0-4.6.5-5.1 5.1-5.1h9.6c2.6 0 3.8.9 4.5 3.4s1.3 5 1.9 7.7zm467.8 101.4c6.6.2 13.1.6 19.5 2.3 1.8.5 3.5 1.1 5.2 1.9 2.3.9 3.8 3.1 4.1 5.5.4 2.8.5 5.7.3 8.6-1.3 17.1-6.6 33.6-15.4 48.3-3.2 5.3-7.1 10.1-11.6 14.3-.9.9-2 1.6-3.2 2-1.9.5-3.1-.5-3.2-2.4.1-1 .3-2 .7-3 3.5-9.4 6.9-18.7 9.6-28.4 1.6-5.3 2.7-10.7 3.4-16.2.2-2 .3-4 .1-6-.1-3.4-2.3-6.3-5.6-7.3-3.1-1-6.3-1.6-9.6-1.8-9.2-.4-18.4 0-27.5 1.2l-12.1 1.5c-1.3.1-2.5 0-3.2-1.2s-.4-2.4.3-3.6c.8-1.1 1.8-2.1 3-2.8 7.4-5.3 15.7-8.5 24.5-10.6 6.8-1.4 13.7-2.1 20.7-2.3z" fill="#00a8e1"/><path d="m538.5 75v36c-.2 2-1.1 2.9-3.1 3-5.4.1-10.7.1-16.1 0-2 0-2.9-1-3.1-2.9-.1-.6-.1-1.3-.1-1.9v-69.2c.1-3.1.9-4 4-4h14.4c3.1 0 4 .9 4 4z" fill="#000000"/><path d="m151.6 74.8v-35.5c.1-2.4 1-3.3 3.4-3.4 5.2-.1 10.4-.1 15.6 0 2.3 0 3 .7 3.2 3 .1.9.1 1.7.1 2.6v66.6c0 1.1-.1 2.2-.2 3.3-.1 1.3-1.1 2.2-2.4 2.3-.6.1-1.1.1-1.7.1h-13.9c-.5 0-.9 0-1.4-.1-1.4-.1-2.6-1.2-2.7-2.6-.1-.8-.1-1.6-.1-2.4.1-11.1.1-22.5.1-33.9zm11.6-74.7c1.6-.1 3.2.2 4.7.7 5.4 1.8 8.2 6.5 7.7 12.6-.4 5.2-4.3 9.4-9.5 10.2-2.2.4-4.5.4-6.7 0-5.7-1.1-9.9-5.3-9.5-12.5.6-7.1 5.3-11 13.3-11z" fill="#00a8e1"/><path d="m527.4.1c2-.2 4 .2 5.9 1 3.9 1.5 6.6 5.1 6.8 9.3.8 9.1-5.3 13.7-13.4 13.5-1.1 0-2.2-.2-3.3-.4-6.2-1.5-9.4-6.3-8.8-13.2.5-5.5 4.8-9.6 10.7-10.1.7-.1 1.4-.2 2.1-.1z" fill="#000000"/><path d="m76.7 66.6c-.4-5.2-1.8-10.3-3.9-15-4.1-8.6-10.4-14.9-20-17.1-11-2.4-20.9 0-29.9 6.7-.6.6-1.3 1.1-2.1 1.5-.2-.1-.4-.2-.4-.3-.3-1-.5-2-.8-3-.8-2.5-1.8-3.4-4.5-3.4-3 0-6.1.1-9.1 0-2.3-.1-4.4.2-6 2 0 35 0 70.1.1 105 1.3 2.1 3.3 2.5 5.6 2.4 3.6-.1 7.2 0 10.8 0 6.3 0 6.3 0 6.3-6.2v-28.5c0-.7-.3-1.5.4-2.1 5 3.9 11.1 6.3 17.4 6.9 8.8.9 16.8-1.3 23.5-7.3 4.9-4.5 8.5-10.3 10.4-16.7 2.7-8.2 2.9-16.5 2.2-24.9zm-23.9 20.7c-.7 3.1-2.3 5.9-4.6 8-2.6 2.2-5.8 3.5-9.2 3.5-5.1.3-10.1-.8-14.6-3.2-1.1-.5-1.8-1.6-1.7-2.8v-18.1c0-6 .1-12 0-18-.1-1.4.7-2.6 2-3.1 5.5-2.6 11.2-3.8 17.2-2.6 4.2.6 7.8 3.3 9.5 7.2 1.5 3.2 2.4 6.7 2.6 10.2.6 6.4.6 12.8-1.2 18.9z" fill="#00a8e1"/><path d="m800.1 82.2c0-.1 0-.1 0 0zm.1-13.4v.4c-.4-.4-.6-1-.4-1.5v-.8s0-.1.1-.1h-.1v-1h.2c0-.1-.1-.1-.1-.2-.2-1.9-.6-3.8-1.1-5.6-3.7-13.2-12-21.9-25.5-25.3-6.3-1.5-12.7-1.7-19.1-.7-13.5 2-23.2 9.2-27.9 22-4.6 12.2-4.5 25.6.1 37.8 4 11.1 12 18.1 23.5 21 6.1 1.5 12.5 1.9 18.8 1 21-2.5 29.7-18.4 31.1-32.2h-.1v-1.4c-.1-.6-.2-1.1.4-1.5v.2c0-.1.1-.3.2-.4v-11.5c0-.1-.1-.1-.1-.2zm-24 19c-.6 2.1-1.5 4-2.8 5.8-2.2 3.1-5.7 5.1-9.5 5.4-1.9.2-3.8.2-5.7-.2-4.2-.8-7.7-3.6-9.4-7.5-1.5-3.1-2.4-6.5-2.7-9.9-.5-5.9-.6-11.8.8-17.6.5-2.3 1.5-4.6 2.7-6.6 2.2-3.6 6-5.9 10.2-6.2 1.9-.2 3.8-.2 5.7.2 4 .8 7.3 3.4 9.1 7.1 1.7 3.5 2.7 7.4 2.9 11.3.1 1.8.2 3.6.1 5.4.3 4.4-.2 8.7-1.4 12.8zm-151.3-87h-13.9c-3.8 0-4.5.7-4.5 4.5v32.4c0 .7.3 1.4-.2 2.1-.9-.1-1.4-.7-2.1-1.1-10.4-6.1-21.3-7.2-32.3-2.1-7.7 3.6-12.5 10.1-15.6 17.8-3 7.4-3.7 15.2-3.5 23.1 0 7.4 1.7 14.7 5 21.3 3.8 7.3 9.3 12.9 17.3 15.3 10.9 3.4 21.1 1.7 30.4-5.2.7-.4 1.1-1.1 2-1.3.5 1.1.9 2.3 1.1 3.5.4 1.6 1.8 2.7 3.5 2.7h2.4c3.6 0 7.1.1 10.6 0 2.8 0 3.6-.9 3.7-3.8v-105.4c-.1-3.1-.9-3.8-3.9-3.8zm-18.3 73.6v18.2c.2 1.2-.5 2.3-1.6 2.8-4.8 2.7-10.3 3.8-15.7 3-4.6-.5-8.6-3.3-10.7-7.4-1.6-3.2-2.5-6.6-2.8-10.1-.8-6.3-.3-12.7 1.2-18.8.5-1.7 1.1-3.3 2-4.9 2.1-3.9 6.1-6.4 10.5-6.7 5.3-.5 10.6.5 15.4 2.7 1.2.4 1.9 1.6 1.8 2.9-.2 6.2-.1 12.2-.1 18.3z" fill="#000000"/><path d="m348 81.3c7.5 1.4 15.2 1.5 22.7.3 4.4-.6 8.6-1.9 12.5-4 4.5-2.6 7.8-6.2 9.2-11.2 3.5-12.6-1.9-25.3-15-30-6.4-2.1-13.2-2.8-19.9-1.9-15.8 1.8-26.1 10.5-30.8 25.6-3.3 10.3-2.9 20.8-.2 31.2 3.5 13.3 12.3 21.2 25.6 24 7.6 1.7 15.3 1.4 22.9.2 4-.7 8-1.7 11.8-3.2 2.3-.9 3.5-2.3 3.4-4.9-.1-2.4 0-4.9 0-7.4 0-3-1.2-3.9-4.1-3.2s-5.7 1.3-8.6 1.9c-6.2 1.3-12.6 1.3-18.8.2-8.5-1.7-14-9-13.5-18 .9.1 1.9.2 2.8.4zm-2.5-15.3c.3-2.4 1-4.7 1.9-6.9 3-7.3 9.3-9.8 15.7-9.4 1.8.1 3.6.5 5.3 1.2 2.6 1.1 4.3 3.5 4.6 6.3.3 1.7.2 3.5-.3 5.2-1.2 3.6-4.1 5.1-7.6 5.8-2.1.5-4.3.7-6.5.5-3.9 0-7.9-.3-11.8-.9-1.5-.2-1.5-.2-1.3-1.8z" fill="#00a8e1"/><path d="m685.3 82.3c5.8-.4 11.6-1.5 16.8-4.3 5.3-2.6 9-7.5 10.1-13.3.7-3.6.7-7.4-.1-11-2.1-9-7.8-14.6-16.4-17.5-4.8-1.5-9.9-2.1-14.9-1.9-16.8.4-29.6 8.9-34.8 25.7-3.5 11.1-3 22.4.4 33.5 3.5 11.4 11.5 18.3 22.9 21.4 4.9 1.2 10 1.7 15 1.5 7.3-.1 14.6-1.5 21.5-4.1 2.9-1.1 3.6-2.1 3.6-5.2v-7.2c-.1-2.9-1.3-3.9-4.2-3.2-2.2.6-4.3 1.1-6.5 1.6-6.7 1.6-13.7 1.9-20.5.7-6.8-1.3-11.4-5.2-13.2-12-.5-2-.9-4-1.1-6.1.5 0 1 0 1.4.2 6.6 1.2 13.3 1.7 20 1.2zm-20.9-16c.7-3.9 1.6-7.7 4-10.9 3.7-4.9 8.8-6.3 14.6-5.7.5 0 .9.2 1.4.2 7 1.1 8.7 6.7 7.4 12.1-1 4-4.3 5.5-8 6.2-2 .4-4.1.6-6.2.5-4.1-.1-8.1-.4-12.1-1-.9-.1-1.3-.5-1.1-1.4z" fill="#000000"/></svg>`},
+  {id:'disney', name:'Disney+', mv:{co:'2'}, tv:{net:'2739'}, svg:`<svg viewBox="0 0 1041 565" xmlns="http://www.w3.org/2000/svg"><path fill="#113CCF" fill-rule="evenodd" d="M735.8 365.7 C721.4 369 683.5 370.9 683.5 370.9 L678.7 385.9 C678.7 385.9 697.6 384.3 711.4 385.7 711.4 385.7 715.9 385.2 716.4 390.8 716.6 396 716 401.6 716 401.6 716 401.6 715.7 405 710.9 405.8 705.7 406.7 670.1 408 670.1 408 L664.3 427.5 C664.3 427.5 662.2 432 667 430.7 671.5 429.5 708.8 422.5 713.7 423.5 718.9 424.8 724.7 431.7 723 438.1 721 445.9 683.8 469.7 661.1 468 661.1 468 649.2 468.8 639.1 452.7 629.7 437.4 642.7 408.3 642.7 408.3 642.7 408.3 636.8 394.7 641.1 390.2 641.1 390.2 643.7 387.9 651.1 387.3 L660.2 368.4 C660.2 368.4 649.8 369.1 643.6 361.5 637.8 354.2 637.4 350.9 641.8 348.9 646.5 346.6 689.8 338.7 719.6 339.7 719.6 339.7 730 338.7 738.9 356.7 738.8 356.7 743.2 364 735.8 365.7 Z M623.7 438.3 C619.9 447.3 609.8 456.9 597.3 450.9 584.9 444.9 565.2 404.6 565.2 404.6 565.2 404.6 557.7 389.6 556.3 389.9 556.3 389.9 554.7 387 553.7 403.4 552.7 419.8 553.9 451.7 547.4 456.7 541.2 461.7 533.7 459.7 529.8 453.8 526.3 448 524.8 434.2 526.7 410 529 385.8 534.6 360 541.8 351.9 549 343.9 554.8 349.7 557 351.8 557 351.8 566.6 360.5 582.5 386.1 L585.3 390.8 C585.3 390.8 599.7 415 601.2 414.9 601.2 414.9 602.4 416 603.4 415.2 604.9 414.8 604.3 407 604.3 407 604.3 407 601.3 380.7 588.2 336.1 588.2 336.1 586.2 330.5 587.6 325.3 588.9 320 594.2 322.5 594.2 322.5 594.2 322.5 614.6 332.7 624.4 365.9 634.1 399.4 627.5 429.3 623.7 438.3 Z M523.5 353 C521.8 356.4 520.8 361.3 512.2 362.6 512.2 362.6 429.9 368.2 426 374 426 374 423.1 377.4 427.6 378.4 432.1 379.3 450.7 381.8 459.7 382.3 469.3 382.4 501.7 382.7 513.3 397.2 513.3 397.2 520.2 404.1 519.9 419.7 519.6 435.7 516.8 441.3 510.6 447.1 504.1 452.5 448.3 477.5 412.3 439.1 412.3 439.1 395.7 420.6 418 406.6 418 406.6 434.1 396.9 475 408.3 475 408.3 487.4 412.8 486.8 417.3 486.1 422.1 476.6 427.2 462.8 426.9 449.4 426.5 439.6 420.1 441.5 421.1 443.3 421.8 427.1 413.3 422.1 419.1 417.1 424.4 418.3 427.7 423.2 431 435.7 438.1 484 435.6 498.4 419.6 498.4 419.6 504.1 413.1 495.4 407.8 486.7 402.8 461.8 399.8 452.1 399.3 442.8 398.8 408.2 399.4 403.2 390.2 403.2 390.2 398.2 384 403.7 366.4 409.5 348 449.8 340.9 467.2 339.3 467.2 339.3 515.1 337.6 523.9 347.4 523.8 347.4 525 349.7 523.5 353 Z M387.5 460.9 C381.7 465.2 369.4 463.3 365.9 458.5 362.4 454.2 361.2 437.1 361.9 410.3 362.6 383.2 363.2 349.6 369 344.3 375.2 338.9 379 343.6 381.4 347.3 384 350.9 387.1 354.9 387.8 363.4 388.4 371.9 390.4 416.5 390.4 416.5 390.4 416.5 393 456.7 387.5 460.9 Z M400 317.1 C383.1 322.7 371.5 320.8 361.7 316.6 357.4 324.1 354.9 326.4 351.6 326.9 346.8 327.4 342.5 319.7 341.7 317.2 340.9 315.3 338.6 312.1 341.4 304.5 331.8 295.9 331.1 284.3 332.7 276.5 335.1 267.5 351.3 233.3 400.6 229.3 400.6 229.3 424.7 227.5 428.8 240.4 L429.5 240.4 C429.5 240.4 452.9 240.5 452.4 261.3 452.1 282.2 426.4 308.2 400 317.1 Z M354 270.8 C349 278.8 348.8 283.6 351.1 286.9 356.8 278.2 367.2 264.5 382.5 254.1 370.7 255.1 360.8 260.2 354 270.8 Z M422.1 257.4 C406.6 259.7 382.6 280.5 371.2 297.5 388.7 300.7 419.6 299.5 433.3 271.6 433.2 271.6 439.8 254.3 422.1 257.4 Z M842.9 418.5 C833.6 434.7 807.5 468.5 772.7 460.6 761.2 488.5 751.6 516.6 746.1 558.8 746.1 558.8 744.9 567 738.1 564.1 731.4 561.7 720.2 550.5 718 535 715.6 514.6 724.7 480.1 743.2 440.6 737.8 431.8 734.1 419.2 737.3 401.3 737.3 401.3 742 368.1 775.3 338.1 775.3 338.1 779.3 334.6 781.6 335.7 784.2 336.8 783 347.6 780.9 352.8 778.8 358 763.9 383.8 763.9 383.8 763.9 383.8 754.6 401.2 757.2 414.9 774.7 388 814.5 333.7 839.2 350.8 847.5 356.7 851.3 369.6 851.3 383.5 851.2 395.8 848.3 408.8 842.9 418.5 Z M835.7 375.9 C835.7 375.9 834.3 365.2 823.9 377 814.9 386.9 798.7 405.6 785.6 430.9 799.3 429.4 812.5 421.9 816.5 418.1 823 412.3 838.1 396.7 835.7 375.9 Z M350.2 389.5 C348.3 413.7 339 454.4 273.1 474.5 229.6 487.6 188.5 481.3 166.1 475.6 165.6 484.5 164.6 488.3 163.2 489.8 161.3 491.7 147.1 499.9 139.3 488.3 135.8 482.8 134 472.8 133 463.9 82.6 440.7 59.4 407.3 58.5 405.8 57.4 404.7 45.9 392.7 57.4 378 68.2 364.7 103.5 351.4 135.3 346 136.4 318.8 139.6 298.3 143.4 288.9 148 278 153.8 287.8 158.8 295.2 163 300.7 165.5 324.4 165.7 343.3 186.5 342.3 198.8 343.8 222 348 252.2 353.5 272.4 368.9 270.6 386.4 269.3 403.6 253.5 410.7 247.5 411.2 241.2 411.7 231.4 407.2 231.4 407.2 224.7 404 230.9 401.2 239 397.7 247.8 393.4 245.8 389 245.8 389 242.5 379.4 203.3 372.7 164.3 372.7 164.1 394.2 165.2 429.9 165.7 450.7 193 455.9 213.4 454.9 213.4 454.9 213.4 454.9 313 452.1 316 388.5 319.1 324.8 216.7 263.7 141 244.3 65.4 224.5 22.6 238.3 18.9 240.2 14.9 242.2 18.6 242.8 18.6 242.8 18.6 242.8 22.7 243.4 29.8 245.8 37.3 248.2 31.5 252.1 31.5 252.1 18.6 256.2 4.1 253.6 1.3 247.7 -1.5 241.8 3.2 236.5 8.6 228.9 14 220.9 19.9 221.2 19.9 221.2 113.4 188.8 227.3 247.4 227.3 247.4 334 301.5 352.2 364.9 350.2 389.5 Z M68 386.2 C57.4 391.4 64.7 398.9 64.7 398.9 84.6 420.3 109.1 433.7 132.4 442 135.1 405.1 134.7 392.1 135 373.5 98.6 376 77.6 381.8 68 386.2 Z" /><path fill="#113CCF" fill-rule="evenodd" d="M1040.9 378.6 L1040.9 391.8 C1040.9 394.7 1038.6 397 1035.7 397 L972.8 397 C972.8 400.3 972.9 403.2 972.9 405.9 972.9 425.4 972.1 441.3 970.2 459.2 969.9 461.9 967.7 463.9 965.1 463.9 L951.5 463.9 C950.1 463.9 948.8 463.3 947.9 462.3 947 461.3 946.5 459.9 946.7 458.5 948.6 440.7 949.5 425 949.5 405.9 949.5 403.1 949.5 400.2 949.4 397 L887.2 397 C884.3 397 882 394.7 882 391.8 L882 378.6 C882 375.7 884.3 373.4 887.2 373.4 L948.5 373.4 C947.2 351.9 944.6 331.2 940.4 310.2 940.2 308.9 940.5 307.6 941.3 306.6 942.1 305.6 943.3 305 944.6 305 L959.3 305 C961.6 305 963.5 306.6 964 308.9 968.1 330.6 970.7 351.7 972 373.4 L1035.7 373.4 C1038.5 373.4 1040.9 375.8 1040.9 378.6 Z" /><path fill="#113CCF" fill-rule="evenodd" d="M200.2 204.3 L200.1 204.3 M199.4 204.4 C199.1 204.4 198.8 204.3 198.5 204.3 198.8 204.4 199.1 204.4 199.4 204.4 L199.7 204.4 C199.6 204.4 199.5 204.4 199.4 204.4 Z M199.4 204.4 C199.1 204.4 198.8 204.3 198.5 204.3 198.8 204.4 199.1 204.4 199.4 204.4 L199.7 204.4 C199.6 204.4 199.5 204.4 199.4 204.4 Z" /><path fill="#113CCF" fill-rule="evenodd" d="M955.3 273.9 C922.8 194 867.9 125.9 796.5 76.9 723.4 26.8 637.7 0.3 548.7 0.3 401.5 0.3 264.9 73.4 183.4 195.9 182.5 197.2 182.3 198.9 182.8 200.4 183.3 202 184.5 203.1 186 203.6 L197.4 207.5 C198.1 207.7 198.8 207.8 199.4 207.8 201.5 207.8 203.5 206.7 204.7 205 242.1 150 292.7 104.3 351.1 72.7 411.4 40.1 479.7 22.8 548.6 22.8 631.9 22.8 712.2 47.4 781 93.8 848.1 139.1 900.2 202.4 931.7 276.7 932.6 278.9 934.8 280.4 937.2 280.4 L950.8 280.4 C952.4 280.4 953.9 279.6 954.7 278.3 955.7 277 955.9 275.4 955.3 273.9 Z M199.4 204.4 C199.1 204.4 198.8 204.3 198.5 204.2 198.8 204.3 199.1 204.4 199.4 204.4 L199.6 204.4 C199.6 204.4 199.5 204.4 199.4 204.4 Z M934.4 278.6 C934.7 278.8 935 279 935.3 279.1 935 278.9 934.7 278.8 934.4 278.6 Z" /></svg>`},
+  {id:'hbo', name:'HBO', mv:{co:'174'}, tv:{net:'49'}, svg:`<svg viewBox="0 0 24 24" fill="#000000" xmlns="http://www.w3.org/2000/svg"><path d="M7.042 16.896H4.414v-3.754H2.708v3.754H.01L0 7.22h2.708v3.6h1.706v-3.6h2.628zm12.043.046C21.795 16.94 24 14.689 24 11.978a4.89 4.89 0 0 0-4.915-4.92c-2.707-.002-4.09 1.991-4.432 2.795.003-1.207-1.187-2.632-2.58-2.634H7.59v9.674l4.181.001c1.686 0 2.886-1.46 2.888-2.713.385.788 1.72 2.762 4.427 2.76zm-7.665-3.936c.387 0 .692.382.692.817 0 .435-.305.817-.692.817h-1.33v-1.634zm.005-3.633c.387 0 .692.382.692.817 0 .436-.305.818-.692.818h-1.33V9.373zm1.77 2.607c.305-.039.813-.387.992-.61-.063.276-.068 1.074.006 1.35-.204-.314-.688-.701-.998-.74zm3.43 0a2.462 2.462 0 1 1 4.924 0 2.462 2.462 0 0 1-4.925 0zm2.462 1.936a1.936 1.936 0 1 0 0-3.872 1.936 1.936 0 0 0 0 3.872Z"/></svg>`},
+  {id:'paramount', name:'Paramount+', mv:{co:'4'}, tv:{net:'4330'}, svg:`<svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="-161.599 -100.544 1000 622.214"><path fill="#0064FF" d="M283.887,219.392c-2.459-1.02-6.49-5.543,0.216-18.138l15.578-32.558c0.473-0.984-0.664-2.216-1.374-1.38 l-13.621,13.695c-6.445,6.727-17.378,25.635-19.495,29.134L248.643,237.5c1.229-0.039,2.258,0.927,2.297,2.156 c0.012,0.405-0.085,0.805-0.283,1.159l-15.125,25.404c-3.693,6.3,2.942,10.704,3.841,9.254c23.773-38.291,37.6-35.234,37.6-35.234 l7.936-18.377c0.418-0.921,0.01-2.006-0.911-2.424C283.964,219.421,283.926,219.407,283.887,219.392z M337.935-100.544 c-135.92,0-246.104,110.13-246.104,245.983c-0.072,52.591,16.8,103.807,48.115,146.058c10.324-4.456,16.061-11.117,20.159-16.218 l45.823-58.576c0.965-1.235,2.225-2.206,3.665-2.825l6.898-2.967l75.345-95.524l10.925-8.549l22.45-31.233 c0.58-0.808,1.287-1.519,2.094-2.104l9.795-7.117c2.42-1.758,5.688-1.786,8.136-0.068l11.886,8.339 c6.306,4.423,11.417,10.338,14.88,17.217l47.61,83.586c0.777,1.595,2.098,2.86,3.724,3.568c9.337,4.646,15.041,5.467,27.261,18.735 c5.702,6.186,30.688,34.117,65.705,77.526c5.089,6.964,11.902,12.484,19.769,16.02c31.22-42.219,48.034-93.359,47.96-145.868 C584.031,9.585,473.852-100.544,337.935-100.544z M158.201,158.997l-15.957-5.18l-9.857,13.56v-16.758l-15.958-5.181l15.958-5.181 v-16.763l9.857,13.563l15.957-5.18l-9.859,13.562L158.201,158.997z M154.418,213.846l-5.183,15.943l-5.183-15.943h-16.771 l13.567-9.854l-5.182-15.942l13.568,9.854l13.569-9.854l-5.183,15.942l13.569,9.854H154.418z M157.621,86.876l5.183,15.942 l-13.569-9.854l-13.568,9.854l5.182-15.942l-13.567-9.854h16.771l5.183-15.942l5.184,15.942h16.771L157.621,86.876z M184.552,50.813 l-9.852-13.563l-15.957,5.18l9.858-13.561l-9.858-13.562l15.957,5.18l9.858-13.562v16.764l15.957,5.171l-15.957,5.182v16.763 L184.552,50.813z M226.495-7.873L221.312,8.07l-5.183-15.942h-16.772l13.569-9.854l-5.182-15.943l13.568,9.852l13.567-9.854 l-5.182,15.956l13.569,9.854h-16.772V-7.873z M279.348-34.791l-9.858,13.563v-16.759l-15.958-5.18l15.958-5.182v-16.763 l9.858,13.563l15.95-5.18l-9.858,13.562l9.859,13.561L279.348-34.791z M346.321-50.157l5.183,15.942l-13.569-9.854l-13.569,9.854 l5.177-15.935l-13.567-9.854h16.771l5.185-15.942l5.183,15.942h16.771L346.321-50.157z M406.374-37.987v16.763l-9.854-13.563 l-15.956,5.181l9.858-13.561l-9.857-13.562l15.957,5.18l9.854-13.563v16.763l15.957,5.182L406.374-37.987z M517.662,131.877 l15.956,5.18l9.855-13.563v16.763l15.958,5.181l-15.958,5.181v16.762l-9.855-13.561l-15.956,5.18l9.869-13.562L517.662,131.877z M454.556,8.074l-5.186-15.943H432.6l13.564-9.854l-5.171-15.944l13.563,9.854l13.563-9.852l-5.172,15.942l13.565,9.854h-16.771 L454.556,8.074z M491.317,50.817V34.055l-15.957-5.182l15.957-5.171V6.931l9.854,13.562l15.957-5.18l-9.854,13.562l9.854,13.561 l-15.957-5.18L491.317,50.817z M521.443,77.027l5.188-15.942l5.186,15.942h16.77l-13.563,9.854l5.186,15.942l-13.577-9.854 l-13.564,9.854l5.186-15.942l-13.578-9.854H521.443z M531.816,213.846l-5.186,15.943l-5.188-15.943h-16.77l13.578-9.854 l-5.186-15.942l13.564,9.854l13.577-9.854l-5.186,15.942l13.563,9.854H531.816z M427.075,287.598 c1.182-1.718,3.103-6.43-0.503-15.162l-10.89-29.273c-1.478-3.737,1.759-6.004,3.931-3.547c0,0,20.582,23.722,25.901,33.627 l10.15,16.843c8.732,0.564,32.83,1.221,56.027,1.221c-2.336-2.319-4.493-4.811-6.457-7.454 c-39.583-49.053-64.687-76.34-64.938-76.61c-8.022-8.717-11.73-10.392-17.849-13.178c-0.886-0.402-1.847-0.836-2.836-1.307v7.447 c0.061,0.503-0.299,0.96-0.803,1.02c-0.407,0.048-0.798-0.18-0.955-0.559L359.658,98.482l-0.162-0.323 c-2.427-4.813-6.004-8.953-10.414-12.052l-5.677-3.989l-27.763,64.021c3.317-0.001,6.008,2.687,6.01,6.004 c0.001,0.821-0.167,1.634-0.494,2.388l-25.651,59.312h23.546c9.1,0,18.114,1.771,26.536,5.22l6.206,2.543 c0,0-18.725,38.509-18.725,58.786c0.027,3.688,0.542,7.355,1.529,10.908h43.163l-1.999-12.155 c16.932,3.78,34.062,6.604,51.311,8.459V287.598z M94.026,349.996c0-39.614-42.017-58.689-91.935-58.689 c-53.398,0-102.392,23.657-120.375,60.339c-4.963,9.773-7.542,20.584-7.528,31.546c-0.227,9.479,2.396,18.807,7.528,26.778 c7.705,11.377,21.466,18.528,41.652,18.528c24.776,0,44.411-13.576,44.411-37.234c0,0,0.364-6.598-7.341-6.598 c-6.239,0-7.893,4.399-7.708,6.598c0.922,18.525-10.092,33.383-29.728,33.383c-22.014,0-31.197-18.708-31.197-38.698 c0-40.902,30.829-68.05,62.942-79.786c15.007-5.667,30.944-8.47,46.985-8.259c36.333,0,66.061,13.942,66.061,51.361 c0,31.175-26.24,57.771-57.623,60.157l1.284-4.217c6.425-22.929,14.315-48.054,27.157-66.58c0.739-1.107,2.02-2.936,3.489-4.768 l-1.833-2.203c-2.746,1.666-5.383,3.503-7.897,5.501c-60.183,46.956-62.011,179.011-142.209,179.011 c-2.762,0-5.519-0.185-8.256-0.551c-16.696-2.75-25.51-13.941-25.51-29.524c0-3.118,1.103-7.339,1.103-9.72 c0.127-4.43-3.361-8.123-7.791-8.252c-0.035-0.001-0.068-0.001-0.101-0.001h-0.915c-7.155,0-10.092,5.678-10.276,13.754 c-0.548,23.294,16.696,36.862,43.309,39.434c2.933,0.182,5.87,0.364,8.99,0.364c62.571,0,100.923-47.32,117.257-104.729 c8.273-0.97,16.441-2.687,24.403-5.131C61.374,403.73,94.026,384.298,94.026,349.996z M690.057,363.75h-22.029l-4.949,11.557 l-8.629,19.441h-10.269l-3.133,6.604h10.652l-12.853,28.43c-9.161,19.991-23.479,39.617-31.738,39.617 c-1.832,0-2.94-0.738-2.94-2.565s0.547-3.49,2.571-8.623c2.571-6.057,6.796-14.858,9.914-21.276 c4.58-9.353,11.924-23.843,11.924-30.996c0-7.154-4.581-12.841-13.579-12.841c-10.091,0-19.267,6.059-27.718,14.854l5.511-13.204 h-20.729l-16.889,38.517c-6.782,13.573-20.553,36.133-29.182,36.133c-1.832,0-2.571-1.103-2.571-2.935 c0.179-1.647,0.612-3.257,1.286-4.771c0.738-1.65,10.83-25.309,10.83-25.309l18.351-42.002h-22.384l-17.805,40.898 c-5.496,12.658-19.443,34.117-28.442,34.117c-1.567,0.153-2.964-0.992-3.117-2.563c0,0,0,0,0-0.003v-0.738 c0-2.198,1.655-6.236,2.941-9.172l9.353-20.538l19.266-42.002h-22.192l-4.418,9.537c-3.294,6.418-8.806,13.938-17.611,13.938 c-4.225,0-6.235-1.646-7.151-3.3c-1.285-14.123-10.283-21.644-23.493-21.644c-18.351,0-31.381,10.821-40.011,24.029 c-5.653,9.103-10.094,18.905-13.206,29.158c-7.893,13.026-16.146,23.116-22.754,23.116c-1.653,0-2.756-0.922-2.756-3.12 c0-2.201,2.204-7.151,2.938-8.992l14.497-30.811c4.037-9.533,6.796-15.77,6.796-22.008c0-6.604-4.58-11.376-12.116-11.376 c-10.46,0-21.84,6.057-30.83,15.957c0.305-1.571,0.427-3.173,0.366-4.771c0-7.338-3.667-11.191-11.195-11.191 c-9.539,0-19.447,5.692-28.438,15.958l5.873-14.313h-20.189l-17.062,38.528c-8.073,18.16-21.102,36.139-28.445,36.139 c-1.649,0-2.751-0.924-2.751-3.122c0-3.483,3.854-12.104,5.32-15.59l22.573-51.17c1.651-3.85-9.178-6.238-22.94-6.238 c-14.129,0-28.627,6.973-39.267,15.957c-7.523,6.233-13.029,9.354-15.787,9.354c-0.899,0.192-1.785-0.381-1.979-1.279 c-0.026-0.122-0.038-0.246-0.036-0.37c0-3.119,7.523-11.927,7.523-18.711c0-3.117-1.649-5.137-5.875-5.137 c-8.069,0-17.616,7.705-24.588,15.772l5.873-14.125h-19.815l-17.063,38.52c-8.076,18.16-21.472,37.054-28.812,37.054 c-1.653,0-2.749-0.915-2.749-3.12c0-3.484,3.67-11.917,5.687-16.324l22.572-51.353c1.651-3.85-9.177-6.238-22.942-6.238 c-20.369,0-40.189,13.756-50.647,27.88c-11.559,15.218-19.447,31.361-19.633,44.569c-0.18,10.637,5.318,17.239,16.331,17.239 c12.296,0,22.208-9.719,27.893-17.058c-0.337,1.452-0.584,2.922-0.739,4.404c0,7.332,2.937,12.653,11.927,12.653 c7.889,0,18.35-6.603,26.792-17.058l-6.798,15.592h21.467l21.105-47.872c6.989-15.587,14.88-23.654,17.074-23.654 c0.505-0.097,0.993,0.233,1.091,0.738c0.01,0.058,0.016,0.118,0.016,0.178c0,1.652-3.301,6.059-3.301,10.087 c0,4.029,2.195,7.151,8.076,7.151c4.58,0,9.721-2.202,14.31-5.14c-10.826,14.679-18.173,30.084-18.173,42.743 c-0.181,10.638,5.318,17.239,16.333,17.239c11.558,0,22.385-11.005,28.257-18.342c-0.221,1.704-0.343,3.418-0.366,5.135 c0,7.157,4.039,13.207,12.295,13.207c9.172,0,16.515-5.689,25.69-16.872l-6.796,15.406h22.016l20.183-45.672 c8.809-19.809,20.734-30.451,26.607-30.451c1.467-0.151,2.782,0.915,2.935,2.384c0,0.003,0,0.006,0.001,0.009v0.546 c-0.242,2.228-0.863,4.399-1.834,6.418l-28.967,66.948h22.571l20.554-46.59c8.803-19.989,18.533-29.715,25.872-29.715 c2.201,0,3.122,1.108,3.122,3.486c-0.196,2.554-0.882,5.047-2.019,7.345l-19.821,42.181c-1.825,4.06-2.942,8.4-3.304,12.836 c0,6.421,3.485,12.116,13.399,12.116c12.854,0,22.571-9.721,33.577-24.21v3.116c0.921,11.555,7.342,21.643,24.406,21.643 c20.184,0,36.524-13.94,46.424-36.128c3.744-7.801,6.167-16.173,7.165-24.77c2.21,1.121,4.68,1.63,7.151,1.478 c3.335,0.037,6.621-0.785,9.545-2.388l-3.486,7.517c-4.049,8.439-8.452,17.794-11.924,25.686c-2.199,4.666-3.508,9.702-3.855,14.85 c0,7.884,4.402,13.575,13.386,13.575s21.291-8.438,30.098-20.359h0.191c-0.59,2.465-0.901,4.985-0.931,7.518 c0,6.605,2.024,12.842,11.199,12.842c10.653,0,18.898-7.705,26.979-17.428l-6.796,15.409h22.206l17.806-40.351 c10.092-22.743,20.183-36.496,29.534-36.496c1.607-0.057,2.981,1.148,3.133,2.75v0.542c0,3.855-5.511,14.31-10.461,24.763 c-4.595,9.538-8.082,16.871-10.461,22.563c-2.208,4.794-3.514,9.952-3.855,15.219c0,6.966,3.855,12.287,12.485,12.287 c12.839,0,25.871-12.472,32.83-21.828c-1.57,4.485-2.433,9.186-2.557,13.936c0,12.845,7.697,19.263,18.527,19.263 c7.196-0.055,14.191-2.363,20.006-6.6c8.437-5.872,15.234-14.674,20.922-22.744l-3.855-3.672 c-5.319,7.522-11.199,14.677-17.258,19.079c-3.193,2.699-7.199,4.249-11.378,4.402c-4.579,0-7.52-2.387-7.52-8.251 c0-5.863,2.748-13.759,6.975-24.399c0.176-0.179,6.234-13.755,11.923-26.773c4.772-11.013,9.544-21.646,10.461-23.847h14.495 l2.938-6.604h-14.315L690.057,363.75z M64.122,469.581c-3.118,0-5.32-1.1-5.32-5.135c0.182-10.823,9.171-30.08,20.372-45.489 c7.888-10.638,18.163-18.521,29.174-18.521L94.4,431.61C83.94,455.091,72.563,469.581,64.122,469.581z M201.383,469.581 c-3.117,0-5.319-1.1-5.5-5.135c0.182-10.823,9.172-30.08,20.369-45.489c7.886-10.638,18.165-18.521,29.175-18.521l-13.95,31.175 c-10.64,24.034-21.466,37.971-30.097,37.971H201.383z M445.071,408.875c-0.547,11.918-11.008,40.71-23.301,57.958 c-4.949,6.968-9.176,8.983-12.839,8.983c-5.143,0-6.62-4.221-5.882-10.454c1.094-10.82,10.092-36.131,22.577-53.556 c5.688-7.887,9.545-11.189,13.947-11.189C443.977,400.618,445.262,404.288,445.071,408.875z M787.559,394.747l20.212-46.649h-23.92 l-20.213,46.649h-50.841l-8.481,19.563h50.856l-20.212,46.649h23.92l20.214-46.649h50.84l8.467-19.563H787.559z"/></svg>`},
+  {id:'skyshow', name:'SkyShowtime', mv:{co:'4|33|521'}, tv:{co:'67|115331'}, svg:`<svg viewBox="0 0 228 70" xmlns="http://www.w3.org/2000/svg"><text x="114" y="46" text-anchor="middle" font-family="Arial,sans-serif" font-size="29" font-weight="800" fill="#101014">SkyShowtime</text></svg>`},
+  {id:'hulu', name:'Hulu', mv:{prov:'15',region:'US'}, tv:{net:'453'}, svg:`<svg viewBox="0 0 200 70" xmlns="http://www.w3.org/2000/svg"><text x="100" y="48" text-anchor="middle" font-family="Arial,sans-serif" font-size="42" font-weight="800" fill="#1CE783">hulu</text></svg>`},
+  {id:'syfy', name:'Syfy', mv:null, tv:{net:'77'}, svg:`<svg viewBox="0 0 200 70" xmlns="http://www.w3.org/2000/svg"><text x="100" y="48" text-anchor="middle" font-family="Arial,sans-serif" font-size="38" font-weight="900" letter-spacing="6" fill="#101014">SYFY</text></svg>`},
+];
+
+/* ---------- Filmix ---------- */
+let fxMovie = null, fxStack = [], fxMaxQ = 720;
+function fxBaseName(u){ try{ return decodeURIComponent(String(u).split('?')[0].split('/').pop()) || ''; }catch(e){ return ''; } }
+function fxInfo(it){ return { file: fxBaseName(it.url), source: 'Filmix 4k', voice: it.voice || '', quality: it.q + 'p' }; }
+function fxProxy(){
+  const p = (state.fxProxy||'').trim().replace(/\/+$/,'');
+  return (p || 'https://cors.jacred.stream') + '/';
+}
+function fxUid(){
+  let u = LS.get('fx_uid','');
+  if(!u){ u = Math.random().toString(36).slice(2,10) + Date.now().toString(36); LS.set('fx_uid', u); }
+  return u;
+}
+function fxTokenQS(){
+  return 'app_lang=ru_RU&user_dev_apk=2.2.13&user_dev_id=' + encodeURIComponent(fxUid()) +
+    '&user_dev_name=Xiaomi+24069PC21G&user_dev_os=12&user_dev_token=' + encodeURIComponent(state.fxToken) +
+    '&user_dev_vendor=Xiaomi';
+}
+async function fxGet(path, extra){
+  const url = fxProxy() + 'http://filmixapp.vip/api/v2/' + path + '?' + fxTokenQS() + (extra ? '&' + extra : '');
+  const r = await fetch(url);
+  if(!r.ok) throw new Error('http ' + r.status);
+  return r.json();
+}
+function fxNorm(s){ return String(s||'').toLowerCase().replace(/[^a-zа-я0-9]/g,''); }
+function fxQualities(link){
+  const m = String(link||'').match(/\[([\d,\s]*)\]/);
+  if(!m) return [];
+  return m[1].split(',').map(q=>parseInt(q,10)).filter(q=>q>0 && q<=fxMaxQ);
+}
+function fxFileUrl(link, q){
+  return String(link).replace(/_\[([\d,\s]*)\]\.mp4/i, '_'+q+'.mp4')
+    .replace('%s.mp4', q+'.mp4')
+    .replace(/^http:\/\//i, 'https://');
+}
+function fxBlocked(name){ return typeof name==='string' && name.toLowerCase().indexOf('заблокировано ')===0; }
+function fxIsSerial(pl){
+  return pl && pl.playlist && typeof pl.playlist==='object' && !Array.isArray(pl.playlist) && Object.keys(pl.playlist).length>0;
+}
+/* =================== FILMIX =================== */
+function fxMatch(json, m){
+  if(!Array.isArray(json) || !json.length) return null;
+  const year = parseInt(String(m.date||'').slice(0,4)) || 0;
+  const orig = m.orig || '';
+  const cards = json.filter(c=>{
+    const y = parseInt(c.year || String(c.alt_name||'').split('-').pop());
+    return y > year-2 && y < year+2;
+  });
+  let card = cards.find(c=>c.year==year && fxNorm(c.original_title)===fxNorm(orig));
+  if(!card) card = cards.find(c=>fxNorm(c.original_title)===fxNorm(orig));
+  if(!card && cards.length===1) card = cards[0];
+  return card || null;
+}
+async function vwFxInit(){
+  const tok = vw.token, m = vw.m;
+  vwPillsHTML([]); vwSetWatch(null); vwSetSub(''); vwSetQ('');
+  if(!state.fxToken){ vwEmpty('Вставь токен Filmix в Профиле 🙂'); return; }
+  let step = 'подписка';
+  try{
+    vwLoading('Проверяю подписку…');
+    fxMaxQ = 720;
+    try{
+      const prof = await fxGet('user_profile');
+      const ud = prof && prof.user_data;
+      if(ud){ if(ud.is_pro_plus) fxMaxQ = 2160; else if(ud.is_pro) fxMaxQ = 1080; }
+    }catch(_){}
+    if(!vwAlive(tok)) return;
+    step = 'поиск';
+    vwLoading('Ищу на Filmix…');
+    const res = await fxGet('search', 'story=' + encodeURIComponent(m.orig || m.title || ''));
+    if(!vwAlive(tok)) return;
+    const card = fxMatch(res, m);
+    if(card) vwFxOpenCard(card.id, card.title || card.original_title || m.title, tok);
+    else if(Array.isArray(res) && res.length) vwFxSimilars(res, tok);
+    else vwEmpty('Ничего не нашлось 😕');
+  }catch(e){ if(vwAlive(tok)) vwFxErr(step, e); }
+}
+function vwFxErr(step, e){
+  const el = $('#vwList'); if(!el) return;
+  const msg = (e && e.message) ? String(e.message) : 'неизвестная ошибка';
+  el.innerHTML = `<div class="vw-load">Не получилось связаться с Filmix 😕<br><span style="font-size:12px;opacity:.7">${escTx(step)}: ${escTx(msg)}</span><br><br><button class="vw-pill" id="vwRetry" style="margin:0 auto">Попробовать снова</button></div>`;
+  const rb = $('#vwRetry'); if(rb) rb.onclick = ()=>vwFxInit();
+  vw.render = ()=>vwFxInit();
+}
+function vwFxSimilars(res, tok){
+  if(!vw || vw.kind!=='fx') return;
+  vwPillsHTML([]); vwSetWatch(null); vwSetQ('');
+  vwSetSub('Уточни, что именно:');
+  const el = $('#vwList'); if(!el) return;
+  el.innerHTML = `<div class="vw-sec-t">Похожие названия</div><div class="vw-list">` +
+    res.slice(0,12).map((c,i)=>`<button class="vw-voice" data-i="${i}"><span>${escTx(c.title||c.original_title||('Вариант '+(i+1)))}<div class="vs">${escTx(c.year||'')}</div></span><span class="go" style="color:var(--muted);font-size:18px">›</span></button>`).join('') + '</div>';
+  el.querySelectorAll('.vw-voice').forEach(b=>b.onclick=()=>{
+    const c = res[+b.dataset.i];
+    vwFxOpenCard(c.id, c.title || c.original_title, tok);
+  });
+  vw.render = ()=>vwFxSimilars(res, tok);
+}
+async function vwFxOpenCard(fid, title, tok){
+  vwLoading('Загружаю…');
+  try{
+    const data = await fxGet('post/' + fid);
+    if(!vwAlive(tok)) return;
+    const pl = data && data.player_links;
+    if(pl && pl.movie && pl.movie.length) vwFxMovie(pl.movie);
+    else if(fxIsSerial(pl)) vwFxSeasons(pl.playlist);
+    else vwEmpty('Видео не найдено 😕');
+  }catch(e){ if(vwAlive(tok)) vwEmpty('Ошибка загрузки 😕'); }
+}
+function vwFxMovie(list){
+  if(!vw || vw.kind!=='fx') return;
+  const items = [];
+  list.forEach(f=>{
+    if(!f || !f.link || fxBlocked(f.translation)) return;
+    const qs = fxQualities(f.link);
+    if(!qs.length) return;
+    const q = Math.max.apply(null, qs);
+    items.push({voice: f.translation || 'Озвучка', q, url: fxFileUrl(f.link, q)});
+  });
+  if(!items.length){ vwEmpty('Видео не найдено 😕'); return; }
+  vwPillsHTML([]);
+  const best = Math.max.apply(null, items.map(i=>i.q));
+  vwSetQ(best+'p');
+  vwSetWatch('Смотреть', ()=>vwFxPlay(items[0], 0, 0));
+  vwSetSub(`Filmix 4k · ${items.length} ${plural(items.length,'озвучка','озвучки','озвучек')} · до ${best}p`);
+  const el = $('#vwList'); if(!el) return;
+  el.innerHTML = `<div class="vw-sec-t">Озвучка</div><div class="vw-list">` +
+    items.map((it,i)=>`<button class="vw-voice" data-i="${i}"><span>${escTx(it.voice)}<div class="vs">${it.q}p</div></span><span style="color:var(--muted);font-size:19px;flex:0 0 auto">›</span></button>`).join('') + '</div>';
+  el.querySelectorAll('.vw-voice').forEach(b=>b.onclick=()=>vwFxPlay(items[+b.dataset.i], 0, 0));
+  vw.render = ()=>vwFxMovie(list);
+}
+function vwFxSeasons(playlist){
+  vw.seasons = Object.keys(playlist).sort((a,b)=>parseInt(a)-parseInt(b));
+  vw.playlist = playlist;
+  vw.seasonIdx = 0; vw.voice = null;
+  vwFxRenderEps();
+}
+function vwFxSeasonLabel(sKey){ return String(sKey)==='-1' ? '1' : String(sKey); }
+/* Filmix: playlist[сезон][озвучка][id серии] = файл — как в оригинальном плагине */
+function vwFxSeasonEps(){
+  const sKey = vw.seasons[vw.seasonIdx];
+  const seasonObj = vw.playlist[sKey] || {};
+  const eps = {};
+  Object.keys(seasonObj).forEach(vName=>{
+    if(fxBlocked(vName)) return;
+    let vm = seasonObj[vName];
+    if(Array.isArray(vm)){ const m2 = {}; vm.forEach((v,i)=>{ m2[String(i+1)] = v; }); vm = m2; }
+    Object.keys(vm).forEach(id=>{
+      const f = vm[id];
+      if(!f || !f.link) return;
+      const qArr = (Array.isArray(f.qualities) && f.qualities.length) ? f.qualities : fxQualities(f.link);
+      const qs = qArr.map(q=>parseInt(q,10)).filter(q=>q>0 && q<=fxMaxQ);
+      if(!qs.length) return;
+      const q = Math.max.apply(null, qs);
+      const url = fxFileUrl(f.link, q);
+      let sNum = vwFxSeasonLabel(sKey), eNum = parseInt(id, 10);
+      const mSe = url.match(/s(\d+)e(\d+?)_\d+\.mp4/i);
+      if(mSe){ sNum = mSe[1]; eNum = parseInt(mSe[2], 10); }
+      if(isNaN(eNum)) return;
+      const key = sNum + 'x' + eNum;
+      if(!eps[key]) eps[key] = {sNum, eNum, voices: []};
+      eps[key].voices.push({voice: vName, q, url});
+    });
+  });
+  return Object.keys(eps).sort((a,b)=>{
+    const pa = a.split('x').map(Number), pb = b.split('x').map(Number);
+    return (pa[0]-pb[0]) || (pa[1]-pb[1]);
+  }).map(k=>eps[k]);
+}
+function vwFxVoicePill(eps){
+  const seen = [];
+  eps.forEach(e=>(e.voices||[]).forEach(v=>{ if(seen.indexOf(v.voice)===-1) seen.push(v.voice); }));
+  if(!seen.length) return [];
+  let cur = vw.voice ? seen.indexOf(vw.voice) : 0;
+  if(cur<0) cur = 0;
+  return [{label:'Озвучка', value: seen[cur],
+    onPick: ()=>openOptSheetK('Озвучка', seen.map(s=>({t:s})), cur, i=>{ vw.voice = seen[i]; vwFxRenderEps(); })}];
+}
+function vwFxRenderEps(){
+  if(!vw || vw.kind!=='fx') return;
+  const m = vw.m;
+  const eps = vwFxSeasonEps();
+  const sNum = vwFxSeasonLabel(vw.seasons[vw.seasonIdx]);
+  vwPillsHTML([
+    {label:'Сезон', value: sNum+' сезон',
+      onPick: ()=>openOptSheetK('Сезон', vw.seasons.map(s=>({t: vwFxSeasonLabel(s)+' сезон'})), vw.seasonIdx, i=>{ vw.seasonIdx=i; vwFxRenderEps(); })},
+    ...vwFxVoicePill(eps)
+  ]);
+  const total = eps.length;
+  const watched = vwCountW('f'+m.id, total);
+  let target = eps.findIndex(e=>!vwIsW('f'+m.id, 's'+e.sNum+'e'+e.eNum));
+  if(target===-1) target = 0;
+  vwSetWatch(eps.length ? 'Смотреть · S'+eps[target].sNum+'E'+eps[target].eNum : null, eps.length ? ()=>vwFxPlayEp(target) : null);
+  vwSetSub(`Filmix 4k · ${sNum} сезон<br>Просмотрено ${watched} из ${total} · осталось ${total-watched}`);
+  const el = $('#vwList'); if(!el) return;
+  el.innerHTML = `<div class="vw-sec-t">Серии · ${total}</div><div class="vw-list">` + eps.map((e,i)=>{
+    const w = vwIsW('f'+m.id, 's'+e.sNum+'e'+e.eNum);
+    const vs = e.voices||[];
+    const vn = vs.slice(0,2).map(v=>v.voice).join(' · ');
+    return `<button class="vw-ep" data-i="${i}">
+      <span class="vw-thumb" data-ep="${+e.eNum}"><span class="vw-num">${+e.eNum}</span></span>
+      <span class="vw-epbody">
+        <span class="vw-ept" data-ept="${+e.eNum}">${+e.eNum} серия</span>
+        <span class="vw-eps">${escTx(vn)}${vs.length>2?' · …':''}</span>
+        <span class="vw-prog"><i style="width:${w?100:0}%"></i></span>
+      </span>
+      ${w?'<span class="vw-side"><span class="vw-done">✓</span></span>':''}
+    </button>`;
+  }).join('') + '</div>';
+  el.querySelectorAll('.vw-ep').forEach(b=>b.onclick=()=>vwFxPlayEp(+b.dataset.i));
+  vwEpStills(m, sNum, el, true);
+  vw.render = vwFxRenderEps;
+}
+function vwFxPlayEp(i){
+  const eps = vwFxSeasonEps();
+  const e = eps[i]; if(!e) return;
+  const voices = e.voices||[];
+  if(!voices.length){ toast('Озвучек не нашлось'); return; }
+  let pick = vw.voice ? voices.find(v=>v.voice===vw.voice) : null;
+  if(!pick && voices.length===1) pick = voices[0];
+  if(pick){ vwFxPlay(pick, e.sNum, e.eNum); return; }
+  vwSetWatch(null);
+  vwSetSub(`Filmix 4k · S${e.sNum}E${e.eNum}`);
+  const el = $('#vwList'); if(!el) return;
+  el.innerHTML = `<button class="vw-backline" id="vwToEps">‹ Серии</button>
+    <div class="vw-sec-t">Озвучка · серия ${+e.eNum}</div><div class="vw-list">` +
+    voices.map((it,j)=>`<button class="vw-voice" data-j="${j}"><span>${escTx(it.voice)}<div class="vs">${it.q}p</div></span><span style="color:var(--muted);font-size:19px;flex:0 0 auto">›</span></button>`).join('') + '</div>';
+  $('#vwToEps').onclick = ()=>vwFxRenderEps();
+  el.querySelectorAll('.vw-voice').forEach(b=>b.onclick=()=>{ vw.voice = voices[+b.dataset.j].voice; vwFxPlay(voices[+b.dataset.j], e.sNum, e.eNum); });
+  vw.render = vwFxRenderEps;
+}
+function vwFxPlay(it, sNum, eNum){
+  const m = vw.m;
+  if(sNum) vwMarkW('f'+m.id, 's'+sNum+'e'+eNum);
+  const se = sNum ? ' · S'+sNum+'E'+eNum : '';
+  vwAskPlayer(it.url, (m.title||'Filmix') + se + ' · ' + it.voice + ' ' + it.q + 'p', [], m, fxInfo(it));
+}
+
+/* ---------- кадры серий (TMDB stills) ---------- */
+const vwEpMetaCache = {};
+async function vwEpMeta(tmdbId, season){
+  const key = tmdbId + ':' + season;
+  if(vwEpMetaCache[key] !== undefined) return vwEpMetaCache[key];
+  try{
+    const d = await tmdb('/tv/' + tmdbId + '/season/' + season);
+    const map = {};
+    (d.episodes||[]).forEach(e=>{ map[e.episode_number] = {still: e.still_path, name: e.name}; });
+    vwEpMetaCache[key] = map;
+  }catch(e){ vwEpMetaCache[key] = null; }
+  return vwEpMetaCache[key];
+}
+function vwLumioSeasonNum(){
+  const t = onlCleanName(((vw.seasons||[])[vw.seasonIdx]||{}).title||'');
+  const mm = t.match(/(\d+)/);
+  return mm ? mm[1] : String(vw.seasonIdx+1);
+}
+function vwEpStills(m, seasonNum, el, withNames){
+  if(!state.tmdbKey || !el) return;
+  const nid = String((m&&m.id)||'').replace(/^tv/,'');
+  if(!/^\d+$/.test(nid)) return;
+  vwEpMeta(nid, seasonNum).then(map=>{
+    if(!map || !el.isConnected) return;
+    el.querySelectorAll('.vw-thumb[data-ep]').forEach(th=>{
+      const meta = map[th.dataset.ep];
+      if(meta && meta.still && !th.querySelector('img')){
+        const img = document.createElement('img');
+        img.src = 'https://image.tmdb.org/t/p/w300' + meta.still;
+        img.alt = ''; img.loading = 'lazy';
+        img.onload = ()=>{ const n = th.querySelector('.vw-num'); if(n) n.style.display = 'none'; };
+        th.insertBefore(img, th.firstChild);
+      }
+    });
+    if(withNames) el.querySelectorAll('[data-ept]').forEach(t=>{
+      const meta = map[t.dataset.ept];
+      if(meta && meta.name) t.textContent = meta.name;
+    });
+  });
+}
+
+/* =================== ТОРРЕНТЫ =================== */
+async function vwTorInit(){
+  const tok = vw.token, m = vw.m;
+  torMovie = m || null; torSort = {key:'top', dir:-1};
+  vwPillsHTML([]); vwSetWatch(null); vwSetSub(''); vwSetQ('');
+  vwLoading('Ищу раздачи…');
+  const q = torQuery(m);
+  torLastQ = q;
+  try{
+    let res = await jacSearch(q);
+    if(!vwAlive(tok)) return;
+    if(m.media==='movie') res = res.filter(t=>!torIsSeriesTitle(t.Title||'') && torYearOK(t.Title||'', m.year));
+    torCache = res;
+    if(!res.length){ vwTorPills(); vwEmpty('Ничего не нашлось 😕<br><span style="font-size:12px">попробуй другой режим запроса</span>'); vw.render = vwTorRender; return; }
+    vwTorRender();
+  }catch(e){ if(vwAlive(tok)){ vwTorPills(); vwEmpty('Парсеры не отвечают · проверь адреса в Профиле'); } }
+}
+function vwTorPills(){
+  const names = {top:'Топ', seeds:'Сиды', quality:'Качество', size:'Размер'};
+  const keys = ['top','seeds','quality','size'];
+  vwPillsHTML([
+    {label:'Сортировка', value: names[torSort.key],
+      onPick: ()=>openOptSheetK('Сортировка', keys.map(k=>({t:names[k]})), keys.indexOf(torSort.key),
+        i=>{ torSort = {key:keys[i], dir:-1}; vwTorRender(); })},
+    {label:'Запрос', value: torQmodeName(),
+      onPick: ()=>openOptSheetK('Режим поиска', TOR_QMODES.map(o=>({t:o.t})), TOR_QMODES.findIndex(o=>o.id===state.torQ),
+        i=>{ state.torQ = TOR_QMODES[i].id; LS.set('tor_qmode', state.torQ); vwTorInit(); })},
+  ]);
+}
+function vwTorRender(){
+  if(!vw || vw.kind!=='tor') return;
+  const m = vw.m;
+  vwTorPills();
+  const arr = torSorted();
+  let topIdx = -1, topScore = -1;
+  arr.forEach(t=>{ const s = torScore(t); if(s>topScore){ topScore = s; topIdx = torCache.indexOf(t); } });
+  const best = topIdx>=0 ? torCache[topIdx] : null;
+  vwSetWatch(best ? 'Лучшая раздача · VLC' : null, best ? ()=>playTorrent(best, m) : null);
+  vwSetSub(`${arr.length} ${plural(arr.length,'раздача','раздачи','раздач')}${torLastQ?` · <b>${escTx(torLastQ)}</b>`:''}`);
+  const el = $('#vwList'); if(!el) return;
+  el.innerHTML = `<div class="vw-list">` + arr.map(t=>{
+    const i = torCache.indexOf(t);
+    return `<div class="tor-item" data-i="${i}" style="margin-bottom:0" title="${escTx(t.Title).replace(/"/g,'&quot;')}">
+      <div class="tor-t">${escTx(torNiceTitle(t, m))}</div>
+      ${torPills(t, i===topIdx)}
+      <div class="tor-m"><span>${fmtSize(t.Size)}</span><span class="seeds">● ${t.Seeders||0}</span><span class="trk">${escTx(t.Tracker)||''}</span></div>
+    </div>`;
+  }).join('') + '</div>';
+  el.querySelectorAll('.tor-item').forEach(x=>x.onclick=()=>playTorrent(torCache[+x.dataset.i], m));
+  vw.render = vwTorRender;
+}
+
+/* Прокси для http-серверов: вставляешь только адрес сервера, остальное — само.
+   Голый IP оборачивается в *.nip.io — воркерам Cloudflare нельзя ходить на IP напрямую. */
+const TS_PROXY = 'https://torrserver.flyugertdiana.workers.dev';
+function tsBase(){
+  const h = (state.tsUrlHttp||'').trim().replace(/\/+$/,'');
+  if(h){
+    if(/^https:\/\//i.test(h) || h.indexOf(TS_PROXY)===0) return h;
+    const u = h.replace(/^(https?:\/\/)(\d{1,3}(?:\.\d{1,3}){3})(:\d+)?/i,
+      (m,p,ip,port)=> p + ip + '.nip.io' + (port||''));
+    return TS_PROXY + '/' + u;
+  }
+  return (state.tsUrl||'').replace(/\/+$/,'') || 'http://127.0.0.1:8090';
+}
+async function tsAPI(body){
+  const r = await fetch(tsBase() + '/torrents', {
+    method:'POST', headers:{'Content-Type':'text/plain'}, body: JSON.stringify(body)
+  });
+  if(!r.ok) throw new Error('HTTP '+r.status);
+  return r.json();
+}
+function tsStreamURL(ts, link, idx, name){
+  return ts + '/stream/' + encodeURIComponent(name||'video') + '?link=' + encodeURIComponent(link) + '&index=' + idx + '&play';
+}
+
+/* ---------- внешний плеер (VLC) ---------- */
+function vlcIntent(u){
+  try{
+    const p = new URL(u);
+    return 'intent://' + p.host + p.pathname + p.search +
+      '#Intent;scheme=' + p.protocol.replace(':','') + ';package=org.videolan.vlc;type=video/*;end';
+  }catch(e){ return null; }
+}
+function openExternal(url, fallback){
+  const iu = vlcIntent(url);
+  if(!iu){ toast('Не получилось открыть ссылку'); return; }
+  toast('Открываю в VLC…');
+  /* intent дёргаем через скрытый iframe — страница приложения остаётся на месте,
+     иначе браузер телика уходит на «Не удалось открыть веб-страницу» */
+  let gone = false;
+  const onHide = ()=>{ gone = true; };
+  document.addEventListener('visibilitychange', onHide);
+  window.addEventListener('blur', onHide);
+  const f = document.createElement('iframe');
+  f.style.cssText = 'display:none;width:0;height:0;border:0;';
+  document.body.appendChild(f);
+  f.src = iu;
+  setTimeout(()=>{
+    document.removeEventListener('visibilitychange', onHide);
+    window.removeEventListener('blur', onHide);
+    f.remove();
+    if(!gone){
+      if(fallback) fallback();
+      else toast('VLC не открылся');
+    }
+  }, 2000);
+}
+
+async function playTorrent(t, m){
+  const ts = tsBase();
+  toast('Подключаюсь к TorrServer…');
+  try{ const e = await fetch(ts+'/echo', {cache:'no-store'}); if(!e.ok) throw 0; }
+  catch(err){ toast('TorrServer не отвечает · проверь адрес в Профиле'); return; }
+  let files = null, subs = [], hash = null;
+  try{
+    const added = await tsAPI({action:'add', link:t.MagnetUri});
+    const th = added && (added.hash || (added.torrent && added.torrent.hash));
+    if(th) hash = String(th).toLowerCase();
+    for(let i=0; i<20 && hash; i++){
+      let tor = null;
+      try{ const g = await tsAPI({action:'get', hash}); tor = (g && g.torrent) || g || {}; }
+      catch(e){ break; }
+      const fs = tor.file_stats || tor.files || [];
+      const vids = fs.filter(f=>isVideo(f.path||f.name))
+        .map(f=>({id:f.id, path:f.path||f.name, size:f.length||f.size||0}))
+        .filter(f=>f.id);
+      if(vids.length){
+        files = vids;
+        subs = fs.filter(f=>/\.(srt|vtt)$/i.test(f.path||f.name||''))
+          .map(f=>({id:f.id, name:shortName(f.path||f.name), url:tsStreamURL(ts, hash, f.id, f.path||f.name)}))
+          .filter(f=>f.id);
+        break;
+      }
+      await new Promise(r=>setTimeout(r,1500));
+    }
+  }catch(e){ /* ниже — прямой фолбэк */ }
+  if(files && files.length===1){ openExternal(tsStreamURL(ts, hash, files[0].id, t.Title)); return; }
+  if(files && files.length>1){
+    torSubsCache = subs;
+    const sorted = files.slice().sort((a,b)=>b.size-a.size);
+    const el = $('#vwList');
+    if(el && vw && vw.kind==='tor'){
+      vw.render = vwTorRender;
+      el.innerHTML = `<button class="vw-backline" id="vwToTor">‹ Раздачи</button>
+        <div class="vw-sec-t">Выбери файл · ${sorted.length}</div><div class="vw-list">` +
+        sorted.map(f=>`<button class="vw-voice" data-f="${f.id}"><span>${escTx(shortName(f.path))}<div class="vs">${fmtSize(f.size)}</div></span><span style="color:var(--muted);font-size:19px;flex:0 0 auto">›</span></button>`).join('') + '</div>';
+      $('#vwToTor').onclick = ()=>vwTorRender();
+      el.querySelectorAll('.vw-voice').forEach(x=>x.onclick=()=>{
+        openExternal(tsStreamURL(ts, hash, x.dataset.f, t.Title));
+      });
+      return;
+    }
+  }
+  // Фолбэк без чтения API: стрим первого файла напрямую по magnet
+  openExternal(tsStreamURL(ts, t.MagnetUri, 1, t.Title));
+}
+
+
+
+</script>
+
+</body>
+</html>
