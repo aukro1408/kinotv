@@ -105,6 +105,27 @@ img{display:block}
 /* широкая карточка 16:9 */
 .card--wide{width:17em}
 .card--wide .card__poster{aspect-ratio:16/9}
+.card__badge--date{color:#fff;background:rgba(47,111,237,.88)}
+.card__badge--new{background:#22c55e;color:#fff}
+.card__badge--bell{background:rgba(0,0,0,.72);color:#fff}
+/* плашки стримингов */
+.studio-tile{flex:0 0 auto;min-width:10.5em;padding:1.15em 1.2em;border-radius:.8em;
+  background:var(--stbg,var(--card));border:1px solid var(--line);
+  font-weight:800;font-size:1.02em;color:var(--stc,#fff);text-align:center;
+  transition:transform .16s ease}
+.studio-tile.focused{transform:scale(1.06);box-shadow:0 0 0 .16em #fff}
+/* карточки коллекций */
+.col-card{flex:0 0 auto;width:17em;transition:transform .16s ease}
+.grid .col-card{width:auto}
+.col-card__cover{position:relative;aspect-ratio:16/9;border-radius:var(--r);overflow:hidden;background:var(--card)}
+.col-card__cover img{width:100%;height:100%;object-fit:cover}
+.col-card__shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.05),rgba(0,0,0,.65))}
+.col-card__count{position:absolute;left:.7em;bottom:.55em;font-size:.8em;font-weight:800;color:#fff;
+  background:rgba(0,0,0,.6);padding:.25em .65em;border-radius:2em}
+.col-card.focused{transform:scale(1.05);z-index:6}
+.col-card.focused .col-card__cover{box-shadow:0 0 0 .18em #fff,0 .8em 2em rgba(0,0,0,.5)}
+/* кнопка «Показать ещё» в категории */
+.cat-more{display:flex;justify-content:center;padding:1.5em 0 2.5em}
 
 /* ---------- сетка ---------- */
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(9.2em,1fr));gap:1.2em .9em;
@@ -366,15 +387,9 @@ function cardHTML(m, wide){
     <div class="card__sub">${escTx(m.year)}${m.genres&&m.genres[0]?' · '+escTx(m.genres[0]):''}</div>
   </div>`;
 }
-function rowHTML(title, items, more){
-  return `<div class="row"><div class="row__head"><div class="row__title">${escTx(title)}</div>
-    ${more?`<button class="row__more" data-more="${escTx(more)}">Ещё ›</button>`:''}</div>
-    <div class="row__line">${items.map(m=>cardHTML(m)).join('')}</div></div>`;
-}
-
 /* ================= НАВИГАЦИЯ (пульт, пространственная) ================= */
 const NAV = { cur:null, mem:{}, prev:null, layer:'app' };
-const NAV_SEL = '.sb-btn, .screen.on .btn, .screen.on .card, .screen.on .pill, .screen.on .src, .screen.on .opt, .screen.on .row__more, .screen.on .vw-voice, .screen.on .vw-pill, .screen.on .vw-ep, .screen.on .vw-backline, .screen.on .vw-watch, .screen.on .search-input, .screen.on .set-row, #veil.on .opt, #veil.on .btn, #player.on .pv-btn';
+const NAV_SEL = '.sb-btn, .screen.on .btn, .screen.on .card, .screen.on .col-card, .screen.on .studio-tile, .screen.on .pill, .screen.on .src, .screen.on .opt, .screen.on .row__more, .screen.on .vw-voice, .screen.on .vw-pill, .screen.on .vw-ep, .screen.on .vw-backline, .screen.on .vw-watch, .screen.on .search-input, .screen.on .set-row, #veil.on .opt, #veil.on .btn, #player.on .pv-btn';
 function navR(el){
   const r = el.getBoundingClientRect();
   return {l:r.left, t:r.top, r:r.right, b:r.bottom, cx:r.left+r.width/2, cy:r.top+r.height/2, w:r.width, h:r.height};
@@ -489,6 +504,10 @@ function navBack(){
   if($('#veil').classList.contains('on')){ closeSheet(); return; }
   if(curScreen()==='movie'){ goScreen(lastMain || 'home'); return; }
   if(curScreen()==='view'){ goScreen('movie'); if(MV) paintMovie(MV); return; }
+  if(curScreen()==='cat'){
+    if(CATV.prev){ CATV.desc = CATV.prev.desc; CATV.page = 1; CATV.prev = null; goScreen('cat'); return; }
+    goScreen(CATV.back || 'home'); return;
+  }
   // уже на главном экране — ничего
 }
 
@@ -512,22 +531,41 @@ $('#veil').addEventListener('click', e=>{
 });
 
 /* ---------- клавиатура пульта ---------- */
+let fldH = 0, edgeL = false, edgeR = false;
+document.addEventListener('focusin', e=>{
+  if(/INPUT|TEXTAREA/.test((e.target&&e.target.tagName)||'')){ fldH = window.innerHeight; edgeL = edgeR = false; }
+});
 document.addEventListener('keydown', e=>{
   if($('#player').classList.contains('on')) return;
   const k = e.key;
   const ae = document.activeElement;
   const inField = ae && /INPUT|TEXTAREA/.test(ae.tagName || '');
   if(inField){
-    /* в поле ввода: текст и стрелки влево/вправо — нативно (ПК-клавиатура, Ctrl+V) */
+    /* в поле ввода: текст — нативно (ПК-клавиатура, Ctrl+V).
+       Как в Lampa: если системная клавиатура телика ужала вьюпорт — стрелки не трогаем. */
+    const caretOK = window.innerHeight === fldH;
     if(k==='Enter'){
       e.preventDefault();
       if(ae.id==='sInput') doSearch();
       else if(ae.id==='aInput'){ const ok=$('#aOk'); if(ok) ok.click(); }
       ae.blur();
-    } else if(k==='ArrowDown' || k==='ArrowUp'){
+    } else if((k==='ArrowDown' || k==='ArrowUp') && caretOK){
       e.preventDefault(); ae.blur();
       navMove(k==='ArrowDown' ? 'down' : 'up');
+    } else if(k==='ArrowLeft' && caretOK){
+      /* влево в начале текста: первое нажатие — пометить, второе — выйти в навигацию */
+      const atStart = (ae.selectionStart||0)===0 && (ae.selectionEnd||0)===0;
+      if(atStart){ if(edgeL){ ae.blur(); navMove('left'); } edgeL = !edgeL; }
+      else edgeL = false;
+      edgeR = false;
+    } else if(k==='ArrowRight' && caretOK){
+      /* вправо в конце текста: первое нажатие — пометить, второе — выйти в навигацию */
+      const v = ae.value||'', atEnd = (ae.selectionStart||0)>=v.length && (ae.selectionEnd||0)>=v.length;
+      if(atEnd){ if(edgeR){ ae.blur(); navMove('right'); } edgeR = !edgeR; }
+      else edgeR = false;
+      edgeL = false;
     } else if(k==='Escape'){ ae.blur(); }
+    else if(!['ArrowLeft','ArrowRight'].includes(k)){ edgeL = edgeR = false; }
     return;
   }
   if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Enter',' '].includes(k)) e.preventDefault();
@@ -596,7 +634,7 @@ function tickClock(){
   el.textContent = String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
 }
 function buildScreens(){
-  $('#main').innerHTML = ['home','movies','series','search','fav','hist','settings','movie','view']
+  $('#main').innerHTML = ['home','movies','series','search','fav','hist','settings','movie','view','cat']
     .map(id=>'<section class="screen" id="scr-'+id+'"></section>').join('');
 }
 function goScreen(id){
@@ -608,7 +646,7 @@ function goScreen(id){
   $$('#sidebar .sb-btn').forEach(b=>b.classList.toggle('active', b.dataset.scr===id));
   $('#scr-'+id).scrollTop = 0;
   const render = {home:renderHome, movies:()=>renderCatalog('movie'), series:()=>renderCatalog('tv'),
-    search:renderSearch, fav:renderFav, hist:renderHist, settings:renderSettings}[id];
+    search:renderSearch, fav:renderFav, hist:renderHist, settings:renderSettings, cat:renderCat}[id];
   if(render) render();
   requestAnimationFrame(()=>{
     const mem = NAV.mem[id];
@@ -616,36 +654,206 @@ function goScreen(id){
   });
 }
 
-/* ================= ГЛАВНАЯ ================= */
-const HOME = {rows:[], hero:null};
+/* ================= ГЛАВНАЯ (ряды как в мобильной версии) ================= */
+const HOME = {data:null, hero:null};
+const THEME_ROWS = [
+  {id:'space', title:'Космос', kw:9882},
+  {id:'comics', title:'По комиксам', kw:9717},
+  {id:'superhero', title:'Супергерои', kw:9715},
+  {id:'zombie', title:'Про зомби', kw:12377},
+  {id:'timetravel', title:'Путешествия во времени', kw:4379},
+  {id:'disaster', title:'Катастрофы', kw:10617},
+  {id:'maniac', title:'Про маньяков', kw:10714},
+  {id:'postapoc', title:'Постапокалипсис', kw:4458},
+  {id:'heist', title:'Ограбления', kw:10051},
+  {id:'dino', title:'Про динозавров', kw:12616},
+  {id:'netflix', title:'Новинки на Netflix', prov:8, wide:true},
+  {id:'appletv', title:'Новинки на Apple TV+', prov:350, wide:true},
+];
+const THEME_IDS = THEME_ROWS.map(t=>'th_'+t.id);
+function todayStr(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function themeURL(t, page){
+  const pg = page>1 ? '&page='+page : '';
+  return t.kw
+    ? `/discover/movie?sort_by=popularity.desc&with_keywords=${t.kw}&vote_count.gte=20${pg}`
+    : `/discover/movie?sort_by=primary_release_date.desc&with_watch_providers=${t.prov}&watch_region=UA&region=UA&primary_release_date.lte=${todayStr()}&vote_count.gte=3${pg}`;
+}
+/* Стриминги — лёгкие текстовые плашки */
+const STUDIOS_MINI = [
+  {id:'netflix', name:'Netflix', color:'#E50914', mv:{prov:'8',region:'UA'}, tv:{net:'213'}},
+  {id:'apple', name:'Apple TV+', color:'#f5f5f7', bg:'#000000', mv:{prov:'350',region:'UA'}, tv:{net:'2552'}},
+  {id:'amazon', name:'Prime Video', color:'#00A8E1', mv:{co:'210099'}, tv:{net:'1024'}},
+  {id:'disney', name:'Disney+', color:'#113CCF', mv:{co:'2'}, tv:{net:'2739'}},
+  {id:'hbo', name:'HBO', color:'#ffffff', bg:'#000000', mv:{co:'174'}, tv:{net:'49'}},
+  {id:'paramount', name:'Paramount+', color:'#0064FF', mv:{co:'4'}, tv:{net:'4330'}},
+  {id:'skyshow', name:'SkyShowtime', color:'#ffffff', bg:'#101014', mv:{co:'4|33|521'}, tv:{co:'67|115331'}},
+  {id:'hulu', name:'hulu', color:'#1CE783', mv:{prov:'15',region:'US'}, tv:{net:'453'}},
+  {id:'syfy', name:'SYFY', color:'#101014', mv:null, tv:{net:'77'}},
+];
+function studioURL(st, media, page){
+  const base = media==='tv' ? st.tv : st.mv;
+  if(!base) return null;
+  const p = [];
+  if(base.prov){ p.push('with_watch_providers='+base.prov); p.push('watch_region='+(base.region||'UA')); }
+  if(base.net) p.push('with_networks='+base.net);
+  if(base.co) p.push('with_companies='+base.co);
+  return `/discover/${media==='tv'?'tv':'movie'}?${p.join('&')}&sort_by=popularity.desc${page>1?'&page='+page:''}`;
+}
+/* --- helpers из мобильной версии --- */
+const MONTHS_RU = ['янв','фев','мар','апр','мая','июн','июл','авг','сен','окт','ноя','дек'];
+function fmtPrmDate(ds){ const p=String(ds||'').split('-'); return p.length>=3 ? (+p[2])+' '+MONTHS_RU[(+p[1]||1)-1] : ds; }
+function prmDateLabel(ds){
+  const t = todayStr();
+  if(!ds || ds<=t) return 'уже вышло';
+  const n = Math.round((new Date(ds)-new Date(t))/864e5);
+  if(n===1) return 'завтра';
+  return 'через '+n+' '+plural(n,'день','дня','дней');
+}
+function epWhen(air){
+  if(!air) return '';
+  const d = new Date(air+'T00:00:00'), now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const dd = Math.round((d - today)/864e5);
+  if(dd===0) return 'сегодня';
+  if(dd===1) return 'завтра';
+  if(dd===-1) return 'вчера';
+  if(dd>1 && dd<7) return 'через '+dd+' '+plural(dd,'день','дня','дней');
+  if(dd<-1 && dd>-7) return Math.abs(dd)+' '+plural(Math.abs(dd),'день','дня','дней')+' назад';
+  return d.toLocaleDateString('ru-RU',{day:'numeric',month:'long'});
+}
+const GENRE_ID_BY_RU = {};
+Object.keys(RU_GENRE).forEach(id=>{ if(!GENRE_ID_BY_RU[RU_GENRE[id]]) GENRE_ID_BY_RU[RU_GENRE[id]] = id; });
+function likedVals(){ const v = LS.get('liked', {}); return Array.isArray(v) ? v : Object.values(v||{}); }
+function hiddenIdSet(){
+  const v = LS.get('hidden', {});
+  const arr = Array.isArray(v) ? v : Object.values(v||{});
+  return new Set(arr.map(x=>String(x && x.id!==undefined ? x.id : x)));
+}
+function buildTaste(){
+  const weights = {};
+  [['like',5],['mark',4],['later',3]].forEach(([k,w])=>{
+    ((state.favs||{})[k]||[]).forEach(m=>{
+      (m.genres||[]).forEach(g=>{
+        const id = GENRE_ID_BY_RU[(g&&g.name)||g];
+        if(id) weights[id] = (weights[id]||0)+w;
+      });
+    });
+  });
+  likedVals().forEach(m=>{
+    (m.genres||[]).forEach(g=>{
+      const id = GENRE_ID_BY_RU[(g&&g.name)||g];
+      if(id) weights[id] = (weights[id]||0)+6;
+    });
+  });
+  return Object.entries(weights).sort((a,b)=>b[1]-a[1]).slice(0,3).map(e=>e[0]);
+}
+async function forYouPayload(){
+  const taste = buildTaste();
+  if(!taste.length || !state.tmdbKey) return null;
+  try{
+    const d = await tmdb(`/discover/movie?with_genres=${taste.join(',')}&sort_by=vote_average.desc&vote_count.gte=100&primary_release_date.lte=${todayStr()}&page=1`);
+    const items = (d.results||[]).map(r=>norm(r));
+    if(!items.length) return null;
+    return {items, genreIds: taste.join(',')};
+  }catch(e){ return null; }
+}
+async function cubGet(path){
+  const r = await fetch('https://cub.red/api/collections/'+path);
+  if(!r.ok) throw new Error('cub '+r.status);
+  return r.json();
+}
+function cubMovie(it){
+  if(!it || (!it.title && !it.name)) return null;
+  return norm(it, it.title ? undefined : 'tv');
+}
+/* --- порядок рядов: читаем настройки мобильной версии (общий localStorage) --- */
+const HOME_ALL = ['studios','upcoming','newep','released','foryou','trend','new','top','tv','cols',...THEME_IDS];
+function homeOrder(){
+  let ord = LS.get('home_order', null);
+  if(!Array.isArray(ord)) ord = HOME_ALL.slice();
+  ord = ord.filter(id=>HOME_ALL.includes(id));
+  HOME_ALL.forEach(id=>{ if(!ord.includes(id)) ord.push(id); });
+  return ord;
+}
+function homeOff(id){ return !!((LS.get('home_off',{})||{})[id]); }
+/* --- карточки рядов --- */
+function prmCardHTML(m){
+  return `<div class="card" data-id="${escTx(tvId(m))}" data-media="${m.media||'movie'}" tabindex="0">
+    <div class="card__poster">${m.poster?`<img loading="lazy" src="${posterURL(m.poster)}" alt="">`:''}<div class="card__badge card__badge--date">${escTx(fmtPrmDate(m.date))}</div></div>
+    <div class="card__title">${escTx(m.title)}</div>
+    <div class="card__sub">${escTx(prmDateLabel(m.date))}</div></div>`;
+}
+function relCardHTML(p){
+  return `<div class="card" data-id="${escTx(p.id)}" data-media="movie" tabindex="0">
+    <div class="card__poster">${p.poster?`<img loading="lazy" src="${posterURL(p.poster)}" alt="">`:''}${p.seen?'':'<div class="card__badge card__badge--bell">🔔</div>'}</div>
+    <div class="card__title">${escTx(p.title)}</div>
+    <div class="card__sub">вышло ${escTx(fmtPrmDate(p.date))}</div></div>`;
+}
+function neCardHTML(t){
+  const ep = (t.hasNew && t.lastEp) ? t.lastEp : (t.nextEp || t.lastEp);
+  const badge = ep ? `S${ep.s} · E${ep.e}` : '';
+  const sub = (t.hasNew && t.lastEp)
+    ? `<b>Новая серия</b> · ${escTx(epWhen(t.lastEp.air))}`
+    : (t.nextEp ? `Следующая · ${escTx(epWhen(t.nextEp.air))}` : (t.lastEp ? `Последняя · ${escTx(epWhen(t.lastEp.air))}` : ''));
+  return `<div class="card" data-id="${escTx(t.id)}" data-media="tv" tabindex="0">
+    <div class="card__poster">${t.poster?`<img loading="lazy" src="${posterURL(t.poster)}" alt="">`:''}${badge?`<div class="card__badge${t.hasNew?' card__badge--new':''}">${badge}</div>`:''}</div>
+    <div class="card__title">${escTx(t.title)}</div>
+    <div class="card__sub">${sub}</div></div>`;
+}
+function colCardHTML(c){
+  const img = c.backdrop_path ? IMG+'w500'+c.backdrop_path : '';
+  return `<div class="col-card" data-col="${c.id}" data-title="${escTx(c.title||'')}" tabindex="0">
+    <div class="col-card__cover">${img?`<img loading="lazy" src="${img}" alt="">`:''}<div class="col-card__shade"></div>
+      <div class="col-card__count">${c.items_count||0} ${plural(c.items_count||0,'фильм','фильма','фильмов')}</div></div>
+    <div class="card__title">${escTx(c.title||'')}</div>
+    <div class="card__sub">@${escTx(c.username||'cub')}</div></div>`;
+}
+const CATREG = {};
+function regCat(key, desc){ CATREG[key] = desc; return key; }
+function secHTML(title, items, catKey, cardFn){
+  const cf = cardFn || cardHTML;
+  return `<div class="row"><div class="row__head"><div class="row__title">${escTx(title)}</div>`
+    + (catKey?`<button class="row__more" data-cat="${escTx(catKey)}">Ещё ›</button>`:'')
+    + `</div><div class="row__line">${items.map(m=>cf(m)).join('')}</div></div>`;
+}
+function studiosRowHTML(){
+  return `<div class="row"><div class="row__head"><div class="row__title">Стриминги</div></div>`
+    + `<div class="row__line">` + STUDIOS_MINI.map((s,i)=>
+      `<button class="studio-tile" data-st="${i}" tabindex="0" style="--stc:${s.color};${s.bg?`--stbg:${s.bg};`:''}"><span>${escTx(s.name)}</span></button>`
+    ).join('') + `</div></div>`;
+}
 async function renderHome(){
   const box = $('#scr-home');
   if(!state.tmdbKey){
     box.innerHTML = '<div class="empty">Вставь TMDB-ключ в Настройках,<br>чтобы оживить главную 🐾</div>';
     return;
   }
-  if(HOME.rows.length){ paintHome(); return; }
+  if(HOME.data){ paintHome(); return; }
   box.innerHTML = '<div class="load"><div class="spin"></div>Загружаю…</div>';
   try{
-    const [tr, now, top, tvt] = await Promise.all([
+    const [tr, now, top, tvt, upc] = await Promise.all([
       tmdb('/trending/movie/week'), tmdb('/movie/now_playing?region=RU'),
       tmdb('/movie/top_rated'), tmdb('/trending/tv/week'),
+      tmdb('/movie/upcoming?region=UA').catch(()=>null),
     ]);
     const T=(tr.results||[]).map(r=>norm(r)), N=(now.results||[]).map(r=>norm(r)),
           P=(top.results||[]).map(r=>norm(r)).sort((a,b)=>b.rating-a.rating),
           TT=(tvt.results||[]).map(r=>norm(r,'tv'));
+    const UPC=((upc&&upc.results)||[]).map(r=>norm(r)).filter(x=>x.date).sort((a,b)=>a.date.localeCompare(b.date));
     HOME.hero = [...N].sort((a,b)=>(b.popularity||0)-(a.popularity||0))[0] || T[0];
-    HOME.rows = [
-      {t:'В тренде', items:T},
-      {t:'Сейчас в кино', items:N},
-      {t:'Топ по рейтингу', items:P},
-      {t:'Сериалы в тренде', items:TT},
-    ];
+    const themes = await Promise.all(THEME_ROWS.map(t=>
+      tmdb(themeURL(t)).then(d=>({t, items:(d.results||[]).map(r=>norm(r))})).catch(()=>({t, items:[]}))));
+    const fy = await forYouPayload();
+    const cols = await cubGet('list?category=top').catch(()=>null);
+    HOME.data = {T, N, P, TT, UPC, themes, fy, cols:((cols&&cols.results)||[]).slice(0,12)};
   }catch(e){ box.innerHTML = '<div class="empty">Не получилось загрузить 😕<br>'+escTx(e.message)+'</div>'; return; }
   paintHome();
 }
 function paintHome(){
-  const box = $('#scr-home'), h = HOME.hero;
+  const box = $('#scr-home'), h = HOME.hero, D = HOME.data;
+  if(!D) return;
+  const hid = hiddenIdSet();
+  const vis = items => (items||[]).filter(m=>{ const id=String(m.id); return !hid.has(id) && !hid.has(tvId(m)); });
   let html = '';
   if(h){
     html += '<div class="hero" data-id="'+escTx(tvId(h))+'" data-media="'+h.media+'" tabindex="0">'
@@ -657,9 +865,125 @@ function paintHome(){
       + '<div class="hero__btns"><button class="btn primary" data-act="watch">'+ICO.play+' Смотреть</button></div>'
       + '</div></div>';
   }
-  html += HOME.rows.map(r=>rowHTML(r.t, r.items.slice(0,16))).join('');
+  const now = todayStr();
+  for(const id of homeOrder()){
+    if(homeOff(id)) continue;
+    if(id==='studios'){ html += studiosRowHTML(); continue; }
+    if(id==='newep'){
+      const items = Object.values(LS.get('tracked',{})||{}).filter(x=>{
+        const ended = ['Ended','Canceled'].includes(x.status);
+        return (!ended || x.hasNew) && (x.hasNew || x.nextEp);
+      }).sort((a,b)=>((b.hasNew?1:0)-(a.hasNew?1:0)) || ((b.addedAt||0)-(a.addedAt||0))).slice(0,14);
+      if(items.length) html += secHTML('Новые серии', items, null, neCardHTML);
+      continue;
+    }
+    if(id==='released'){
+      const rel = Object.values(LS.get('premieres',{})||{}).filter(p=>p.date && p.date<=now)
+        .sort((a,b)=>b.date.localeCompare(a.date)).slice(0,14);
+      if(rel.length) html += secHTML('Уже вышло', rel, null, relCardHTML);
+      continue;
+    }
+    if(id==='upcoming'){
+      const items = vis(D.UPC).filter(u=>u.date>now).slice(0,14);
+      if(items.length) html += secHTML('Скоро выйдет', items,
+        regCat('upcoming',{title:'Скоро выйдет', url:p=>`/movie/upcoming?region=UA&page=${p}`}), prmCardHTML);
+      continue;
+    }
+    if(id==='foryou'){
+      const items = D.fy ? vis(D.fy.items).slice(0,14) : [];
+      if(items.length) html += secHTML('Для тебя', items,
+        regCat('foryou',{title:'Для тебя', url:p=>`/discover/movie?with_genres=${D.fy.genreIds}&sort_by=vote_average.desc&vote_count.gte=100&primary_release_date.lte=${todayStr()}&page=${p}`}));
+      continue;
+    }
+    if(id==='trend'){ const items=vis(D.T).slice(0,16); if(items.length) html += secHTML('В тренде', items, regCat('trend',{title:'В тренде', url:p=>`/trending/movie/week?page=${p}`})); continue; }
+    if(id==='new'){ const items=vis(D.N).slice(0,16); if(items.length) html += secHTML('Сейчас в кино', items, regCat('new',{title:'Сейчас в кино', url:p=>`/movie/now_playing?region=RU&page=${p}`})); continue; }
+    if(id==='top'){ const items=vis(D.P).slice(0,16); if(items.length) html += secHTML('Топ по рейтингу', items, regCat('top',{title:'Топ по рейтингу', url:p=>`/movie/top_rated?page=${p}`})); continue; }
+    if(id==='tv'){ const items=vis(D.TT).slice(0,16); if(items.length) html += secHTML('Сериалы в тренде', items, regCat('tv',{title:'Сериалы в тренде', url:p=>`/trending/tv/week?page=${p}`, media:'tv'})); continue; }
+    if(id==='cols'){
+      if(D.cols.length) html += secHTML('Коллекции', D.cols, regCat('cols',{title:'Коллекции', cols:true}), colCardHTML);
+      continue;
+    }
+    if(id.startsWith('th_')){
+      const th = D.themes.find(x=>'th_'+x.t.id===id);
+      if(th && th.items.length){
+        const t = th.t, items = vis(th.items).slice(0,14);
+        if(items.length) html += secHTML(t.title, items, regCat(id,{title:t.title, url:p=>themeURL(t,p), wide:!!t.wide}),
+          t.wide ? (m=>cardHTML(m,true)) : null);
+      }
+      continue;
+    }
+  }
   box.innerHTML = html;
   bindCards(box);
+  box.querySelectorAll('[data-cat]').forEach(b=>b.addEventListener('click', ()=>{ const c=CATREG[b.dataset.cat]; if(c) openCat(c); }));
+  box.querySelectorAll('[data-col]').forEach(c=>c.addEventListener('click', ()=>openCollection(c.dataset.col, c.dataset.title)));
+  box.querySelectorAll('[data-st]').forEach(b=>b.addEventListener('click', ()=>openStudio(+b.dataset.st)));
+}
+/* ================= КАТЕГОРИЯ (сетка с «Ещё») ================= */
+const CATV = {desc:null, page:1, back:'home', prev:null};
+function openCat(desc){
+  CATV.prev = CATV.desc ? {desc:CATV.desc} : null;
+  CATV.desc = desc; CATV.page = 1;
+  if(curScr && curScr!=='cat') CATV.back = curScr;
+  goScreen('cat');
+}
+function renderCat(){
+  const box = $('#scr-cat'), d = CATV.desc;
+  if(!d){ box.innerHTML=''; return; }
+  box.innerHTML = `<div class="h1">${escTx(d.title)}</div><div class="grid" id="catGrid"></div><div class="cat-more" id="catMore"></div>`;
+  catLoad();
+}
+async function catLoad(){
+  const d = CATV.desc, grid = $('#catGrid'), moreBox = $('#catMore');
+  if(!d || !grid) return;
+  if(CATV.page===1) grid.innerHTML = '<div class="load"><div class="spin"></div>Загружаю…</div>';
+  try{
+    let hasMore = true;
+    const tmp = document.createElement('div');
+    if(d.cols){
+      const j = await cubGet(`list?category=top&page=${CATV.page}`);
+      const res = j.results||[];
+      tmp.innerHTML = res.map(c=>colCardHTML(c)).join('');
+      hasMore = res.length >= 20;
+    } else if(d.cubView){
+      const j = await cubGet(`view/${d.cubView}?page=${CATV.page}`);
+      const res = j.results||[];
+      tmp.innerHTML = res.map(cubMovie).filter(Boolean).map(m=>cardHTML(m)).join('');
+      hasMore = res.length >= 20 && CATV.page < 60;
+    } else {
+      const j = await tmdb(d.url(CATV.page));
+      const res = j.results||[];
+      tmp.innerHTML = res.map(r=>norm(r, d.media)).map(m=>(d.wide?cardHTML(m,true):cardHTML(m))).join('');
+      hasMore = CATV.page < (j.total_pages||1);
+    }
+    if(CATV.page===1) grid.innerHTML = '';
+    bindCards(tmp);
+    tmp.querySelectorAll('[data-col]').forEach(c=>c.addEventListener('click', ()=>openCollection(c.dataset.col, c.dataset.title)));
+    while(tmp.firstChild) grid.appendChild(tmp.firstChild);
+    if(CATV.page===1){
+      const first = grid.querySelector('.card, .col-card');
+      if(first && (!NAV.cur || !grid.contains(NAV.cur))) navFocus(first);
+    }
+    if(hasMore){
+      moreBox.innerHTML = `<button class="btn" id="catMoreBtn">Показать ещё</button>`;
+      $('#catMoreBtn').addEventListener('click', ()=>{ CATV.page++; $('#catMoreBtn').blur(); catLoad(); });
+    } else moreBox.innerHTML = '';
+  }catch(e){
+    if(CATV.page===1) grid.innerHTML = '<div class="empty">Ошибка загрузки 😕</div>';
+  }
+}
+function openCollection(id, title){
+  openCat({title: title||'Коллекция', cubView:id});
+}
+function openStudio(i){
+  const st = STUDIOS_MINI[i];
+  if(!st) return;
+  const go = media => {
+    if(!studioURL(st, media, 1)) return;
+    openCat({title: st.name+(media==='tv'?' · сериалы':''), url:p=>studioURL(st, media, p), media});
+  };
+  if(st.mv && st.tv) openSheet(st.name, [{t:'Фильмы'},{t:'Сериалы'}], idx=>go(idx===1?'tv':'movie'));
+  else go(st.tv ? 'tv' : 'movie');
 }
 
 /* ================= КАТАЛОГ ================= */
@@ -849,7 +1173,7 @@ function renderSettings(){
     const id = b.dataset.id;
     const cur = {tmdb:state.tmdbKey, fx:state.fxToken, ts:state.tsUrl}[id] || '';
     askText({tmdb:'TMDB API-ключ', fx:'Filmix токен', ts:'Адрес TorrServer'}[id], cur, v=>{
-      if(id==='tmdb'){ state.tmdbKey=v.trim(); LS.set('tmdb_key',state.tmdbKey); HOME.rows=[]; }
+      if(id==='tmdb'){ state.tmdbKey=v.trim(); LS.set('tmdb_key',state.tmdbKey); HOME.data=null; }
       if(id==='fx'){ state.fxToken=v.trim(); LS.set('fx_token',state.fxToken); }
       if(id==='ts'){ state.tsUrl=v.trim()||'http://127.0.0.1:8090'; LS.set('ts_url',state.tsUrl); }
       renderSettings();
