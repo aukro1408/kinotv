@@ -1425,7 +1425,7 @@ function vwSetQ(q){ const e = $('#vwQ'); if(!e) return; if(q){ e.style.display='
 /* --- выбор: внутренний плеер или VLC --- */
 function playUrl(url, title){
   if(state.defPlayer==='builtin'){ openPlayer(url, title); return; }
-  openExternal(url, ()=>{ toast('VLC не открылся · включаю встроенный плеер'); openPlayer(url, title); });
+  vlcLaunch(url);
 }
 function vwAskPlayer(url, title, subs, mv, info){
   if(state.defPlayer==='vlc'){ playUrl(url, title); return; }
@@ -2303,7 +2303,7 @@ function vwTorRender(){
   let topIdx = -1, topScore = -1;
   arr.forEach(t=>{ const s = torScore(t); if(s>topScore){ topScore = s; topIdx = torCache.indexOf(t); } });
   const best = topIdx>=0 ? torCache[topIdx] : null;
-  vwSetWatch(best ? 'Лучшая раздача'+(state.defPlayer==='builtin' ? '' : ' · VLC') : null, best ? ()=>playTorrent(best, m) : null);
+  vwSetWatch(best ? 'Лучшая раздача'+(state.defPlayer==='builtin' ? '' : ' · VLC') : null, best ? ()=>playTorrentNow(best, m) : null);
   vwSetSub(`${arr.length} ${plural(arr.length,'раздача','раздачи','раздач')}${torLastQ?` · <b>${escTx(torLastQ)}</b>`:''}`);
   const el = $('#vwList'); if(!el) return;
   el.innerHTML = `<div class="vw-list">` + arr.map(t=>{
@@ -2347,32 +2347,19 @@ function vlcIntent(u){
   try{
     const p = new URL(u);
     return 'intent://' + p.host + p.pathname + p.search +
-      '#Intent;scheme=' + p.protocol.replace(':','') + ';package=org.videolan.vlc;type=video/*;end';
+      '#Intent;action=android.intent.action.VIEW;scheme=' + p.protocol.replace(':','') +
+      ';type=video/*;package=org.videolan.vlc;end';
   }catch(e){ return null; }
 }
-function openExternal(url, fallback){
+/* Запуск VLC — как у Lampa: прямой переход по intent://.
+   Важно: вызывать СИНХРОННО в обработчике клика — без жеста пользователя
+   Chrome на Android TV молча блокирует intent:// (поэтому торренты шли
+   через асинхронный playTorrent и VLC не открывался). */
+function vlcLaunch(url){
   const iu = vlcIntent(url);
   if(!iu){ toast('Не получилось открыть ссылку'); return; }
   toast('Открываю в VLC…');
-  /* intent дёргаем через скрытый iframe — страница приложения остаётся на месте,
-     иначе браузер телика уходит на «Не удалось открыть веб-страницу» */
-  let gone = false;
-  const onHide = ()=>{ gone = true; };
-  document.addEventListener('visibilitychange', onHide);
-  window.addEventListener('blur', onHide);
-  const f = document.createElement('iframe');
-  f.style.cssText = 'display:none;width:0;height:0;border:0;';
-  document.body.appendChild(f);
-  f.src = iu;
-  setTimeout(()=>{
-    document.removeEventListener('visibilitychange', onHide);
-    window.removeEventListener('blur', onHide);
-    f.remove();
-    if(!gone){
-      if(fallback) fallback();
-      else toast('VLC не открылся');
-    }
-  }, 2000);
+  try{ window.location.assign(iu); }catch(e){ toast('Не вышло открыть VLC'); }
 }
 
 async function playTorrent(t, m){
@@ -2422,6 +2409,15 @@ async function playTorrent(t, m){
   }
   // Фолбэк без чтения API: стрим первого файла напрямую по magnet
   playUrl(tsStreamURL(ts, t.MagnetUri, 1, t.Title), t.Title);
+}
+/* Мгновенный запуск лучшей раздачи прямо в клике (без ожидания API TorrServer):
+   только так сохраняется жест пользователя и Chrome не блокирует intent:// */
+function playTorrentNow(t, m){
+  const ts = tsBase();
+  const url = tsStreamURL(ts, t.MagnetUri, 1, t.Title);
+  const title = (m && (m.title || m.name)) || t.Title || 'Торрент';
+  if(state.defPlayer==='builtin'){ openPlayer(url, title); return; }
+  vlcLaunch(url);
 }
 
 
