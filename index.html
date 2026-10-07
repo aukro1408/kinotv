@@ -332,7 +332,9 @@ const backURL = p=>p ? IMG+'w1280'+p : '';
 const RU_GENRE = {28:'Боевик',12:'Приключения',16:'Анимация',35:'Комедия',80:'Криминал',18:'Драма',14:'Фэнтези',27:'Ужасы',10749:'Мелодрама',878:'Фантастика',53:'Триллер',36:'История',10402:'Музыка',10759:'Боевик',10765:'Фантастика',10762:'Детям',10763:'Новости',10764:'Реалити',10767:'Ток-шоу'};
 
 async function tmdb(path){
-  const r = await fetch(`https://api.themoviedb.org/3${path}${path.includes('?')?'&':'?'}api_key=${state.tmdbKey}&language=ru-RU`);
+  const sep = path.includes('?')?'&':'?';
+  const lang = /[?&]language=/.test(path) ? '' : '&language=ru-RU';
+  const r = await fetch(`https://api.themoviedb.org/3${path}${sep}api_key=${state.tmdbKey}${lang}`);
   if(!r.ok) throw new Error('tmdb '+r.status);
   return r.json();
 }
@@ -726,7 +728,7 @@ async function openMovie(id, media, autoplay){
   const num = String(id).replace(/^tv/,'');
   const pre = [...state.history, ...state.favs.like].find(x=>String(x.id)===String(id));
   try{
-    const d = await tmdb('/'+(isTv?'tv':'movie')+'/'+num+'?append_to_response=credits&language=ru-RU');
+    const d = await tmdb('/'+(isTv?'tv':'movie')+'/'+num+'?append_to_response=credits');
     const m = norm(d, isTv?'tv':'movie');
     m.cast = (((d.credits||{}).cast)||[]).slice(0,14);
     m.runtime = d.runtime || null;
