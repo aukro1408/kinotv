@@ -54,10 +54,9 @@ img{display:block}
 .focused{position:relative;z-index:5}
 .card.focused{transform:scale(1.07);z-index:6}
 .card.focused .card__poster{box-shadow:0 0 0 .18em #fff,0 .8em 2em rgba(0,0,0,.5)}
-.btn.focused,.sb-btn.focused,.kb-key.focused,.pill.focused,.src.focused,.opt.focused{
+.btn.focused,.sb-btn.focused,.pill.focused,.src.focused,.opt.focused{
   box-shadow:0 0 0 .16em #fff}
 .btn.focused{background:rgba(255,255,255,.14)}
-.kb-key.focused{background:var(--accent)}
 .pill.focused{background:rgba(255,255,255,.16)}
 .src.focused{background:var(--card2)}
 .opt.focused{background:rgba(47,123,255,.25)}
@@ -145,12 +144,9 @@ img{display:block}
 .search-box{display:flex;gap:1em;margin-bottom:1.4em}
 .search-input{flex:1;background:var(--card);border:1px solid var(--line);border-radius:.7em;
   padding:.8em 1.2em;font-size:1.15em;font-weight:700;color:#fff;min-width:0}
+input.search-input{font:inherit}
+input.search-input::placeholder{color:var(--muted);font-weight:600}
 .search-input.focused{box-shadow:0 0 0 .16em #fff}
-.kb{display:flex;flex-direction:column;gap:.45em;margin-bottom:1.6em;max-width:46em}
-.kb__row{display:flex;gap:.45em}
-.kb-key{flex:1;background:var(--card);border:1px solid var(--line);border-radius:.5em;
-  padding:.6em 0;font-size:1.15em;font-weight:800;text-align:center;min-width:2.2em}
-.kb-key.wide{flex:2.4}
 
 /* ---------- настройки ---------- */
 .set{max-width:44em}
@@ -378,7 +374,7 @@ function rowHTML(title, items, more){
 
 /* ================= НАВИГАЦИЯ (пульт, пространственная) ================= */
 const NAV = { cur:null, mem:{}, prev:null, layer:'app' };
-const NAV_SEL = '.sb-btn, .screen.on .btn, .screen.on .card, .screen.on .pill, .screen.on .kb-key, .screen.on .src, .screen.on .opt, .screen.on .row__more, .screen.on .vw-voice, .screen.on .vw-pill, .screen.on .vw-ep, .screen.on .vw-backline, .screen.on .vw-watch, .screen.on .search-input, .screen.on .set-row, #veil.on .opt, #veil.on .btn, #player.on .pv-btn';
+const NAV_SEL = '.sb-btn, .screen.on .btn, .screen.on .card, .screen.on .pill, .screen.on .src, .screen.on .opt, .screen.on .row__more, .screen.on .vw-voice, .screen.on .vw-pill, .screen.on .vw-ep, .screen.on .vw-backline, .screen.on .vw-watch, .screen.on .search-input, .screen.on .set-row, #veil.on .opt, #veil.on .btn, #player.on .pv-btn';
 function navR(el){
   const r = el.getBoundingClientRect();
   return {l:r.left, t:r.top, r:r.right, b:r.bottom, cx:r.left+r.width/2, cy:r.top+r.height/2, w:r.width, h:r.height};
@@ -519,8 +515,22 @@ $('#veil').addEventListener('click', e=>{
 document.addEventListener('keydown', e=>{
   if($('#player').classList.contains('on')) return;
   const k = e.key;
-  const inField = /INPUT|TEXTAREA/.test(document.activeElement && document.activeElement.tagName || '');
-  if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Enter',' '].includes(k) && !inField) e.preventDefault();
+  const ae = document.activeElement;
+  const inField = ae && /INPUT|TEXTAREA/.test(ae.tagName || '');
+  if(inField){
+    /* в поле ввода: текст и стрелки влево/вправо — нативно (ПК-клавиатура, Ctrl+V) */
+    if(k==='Enter'){
+      e.preventDefault();
+      if(ae.id==='sInput') doSearch();
+      else if(ae.id==='aInput'){ const ok=$('#aOk'); if(ok) ok.click(); }
+      ae.blur();
+    } else if(k==='ArrowDown' || k==='ArrowUp'){
+      e.preventDefault(); ae.blur();
+      navMove(k==='ArrowDown' ? 'down' : 'up');
+    } else if(k==='Escape'){ ae.blur(); }
+    return;
+  }
+  if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Enter',' '].includes(k)) e.preventDefault();
   if(k==='ArrowLeft') navMove('left');
   else if(k==='ArrowRight') navMove('right');
   else if(k==='ArrowUp') navMove('up');
@@ -602,7 +612,7 @@ function goScreen(id){
   if(render) render();
   requestAnimationFrame(()=>{
     const mem = NAV.mem[id];
-    navFocus(mem && navVisible(mem) ? mem : $('#scr-'+id+' .card, #scr-'+id+' .btn, #scr-'+id+' .pill, #scr-'+id+' .kb-key, #scr-'+id+' .set-row, #scr-'+id+' .search-input'));
+    navFocus(mem && navVisible(mem) ? mem : $('#scr-'+id+' .card, #scr-'+id+' .btn, #scr-'+id+' .pill, #scr-'+id+' .set-row, #scr-'+id+' .search-input'));
   });
 }
 
@@ -777,44 +787,24 @@ function chooseSource(m){
 }
 
 /* ================= ПОИСК ================= */
-const KB_ROWS = [
-  ['1','2','3','4','5','6','7','8','9','0'],
-  ['й','ц','у','к','е','н','г','ш','щ','з','х'],
-  ['ф','ы','в','а','п','р','о','л','д','ж','э'],
-  ['я','ч','с','м','и','т','ь','б','ю','⌫'],
-  ['a','b','c','d','e','f','g','h','i','j','k','l','m'],
-  ['n','o','p','q','r','s','t','u','v','w','x','y','z','␣'],
-];
 let searchQ = '';
-function kbHTML(){
-  return '<div class="kb">'+KB_ROWS.map(r=>'<div class="kb__row">'
-    + r.map(k=>'<button class="kb-key'+(k==='␣'?' wide':'')+'" data-k="'+k+'">'+(k==='␣'?'пробел':k)+'</button>').join('')
-    + '</div>').join('')+'</div>';
-}
 function renderSearch(){
   const box = $('#scr-search');
   box.innerHTML = '<div class="h1">Поиск</div>'
-    + '<div class="search-box"><div class="search-input" id="sInput" tabindex="0">'
-    + (escTx(searchQ)||'<span style="color:var(--muted)">Название…</span>')
-    + '</div><button class="btn primary" id="sGo">'+ICO.search+' Найти</button></div>'
-    + kbHTML() + '<div class="grid" id="sGrid"></div>';
-  const upd = ()=>{ $('#sInput').innerHTML = escTx(searchQ)||'<span style="color:var(--muted)">Название…</span>'; };
-  box.querySelectorAll('.kb-key').forEach(k=>k.onclick=()=>{
-    const c = k.dataset.k;
-    if(c==='⌫') searchQ = searchQ.slice(0,-1);
-    else if(c==='␣') searchQ += ' ';
-    else searchQ += c;
-    upd();
-  });
+    + '<div class="search-box"><input class="search-input" id="sInput" placeholder="Название…" value="'+escTx(searchQ)+'">'
+    + '<button class="btn primary" id="sGo">'+ICO.search+' Найти</button></div>'
+    + '<div class="grid" id="sGrid"></div>';
   $('#sGo').onclick = doSearch;
-  $('#sInput').onclick = doSearch;
 }
 async function doSearch(){
-  if(!searchQ.trim()){ toast('Введи название'); return; }
+  const inp = $('#sInput');
+  searchQ = inp ? inp.value.trim() : searchQ;
+  if(!searchQ){ toast('Введи название'); return; }
+  if(inp) inp.blur();
   const grid = $('#sGrid');
   grid.innerHTML = '<div class="load"><div class="spin"></div>Ищу…</div>';
   try{
-    const j = await tmdb('/search/multi?query='+encodeURIComponent(searchQ.trim()));
+    const j = await tmdb('/search/multi?query='+encodeURIComponent(searchQ));
     const items = (j.results||[]).filter(r=>r.media_type==='movie'||r.media_type==='tv')
       .map(r=>norm(r, r.media_type));
     grid.innerHTML = items.length ? items.map(m=>cardHTML(m)).join('') : '<div class="empty">Ничего не нашлось 😕</div>';
@@ -822,7 +812,6 @@ async function doSearch(){
     const f = grid.querySelector('.card'); if(f) navFocus(f);
   }catch(e){ grid.innerHTML = '<div class="empty">Ошибка поиска 😕</div>'; }
 }
-
 /* ================= ИЗБРАННОЕ / ИСТОРИЯ ================= */
 function renderFav(){
   const box = $('#scr-fav'), items = state.favs.like;
@@ -869,26 +858,16 @@ function renderSettings(){
   });
 }
 function askText(title, cur, cb){
-  searchQ = cur || '';
   openSheet(title, [], ()=>{});
   $('#sheetBox').innerHTML = '<div class="sheet__t">'+escTx(title)+'</div>'
-    + '<div class="search-input" style="margin-bottom:1em" id="aInput">'+escTx(searchQ)+'</div>'
-    + kbHTML()
-    + '<div style="display:flex;gap:.8em;margin-top:1em"><button class="btn primary" id="aOk">Готово</button>'
+    + '<input class="search-input" id="aInput" style="width:100%;margin-bottom:1.2em" value="'+escTx(cur||'')+'" placeholder="Вставь ключ…">'
+    + '<div style="display:flex;gap:.8em"><button class="btn primary" id="aOk">Готово</button>'
     + '<button class="btn" id="aCancel">Отмена</button></div>';
-  const upd = ()=>{ $('#aInput').textContent = searchQ; };
-  $('#sheetBox').querySelectorAll('.kb-key').forEach(k=>k.onclick=()=>{
-    const c = k.dataset.k;
-    if(c==='⌫') searchQ = searchQ.slice(0,-1);
-    else if(c==='␣') searchQ += ' ';
-    else searchQ += c;
-    upd();
-  });
-  $('#aOk').onclick = ()=>{ const v=searchQ; closeSheet(); cb(v); };
+  const inp = $('#aInput');
+  $('#aOk').onclick = ()=>{ const v=inp.value; closeSheet(); cb(v); };
   $('#aCancel').onclick = ()=>closeSheet();
-  const f = $('#sheetBox .kb-key'); if(f) navFocus(f);
+  setTimeout(()=>{ try{ inp.focus(); inp.select(); }catch(e){} }, 150);
 }
-
 /* ================= ПЛЕЕР ================= */
 let plHls = null, plHideT = 0;
 function openPlayer(url, title){
