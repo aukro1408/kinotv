@@ -1425,13 +1425,21 @@ function vwSetQ(q){ const e = $('#vwQ'); if(!e) return; if(q){ e.style.display='
 
 /* --- выбор: внутренний плеер или VLC --- */
 function playUrl(url, title){
+  if(state.defPlayer!=='builtin'){
+    const And = lampaBridge();
+    if(And){
+      try{ And.openPlayer(url, {url:url, title:title||''}); return; }
+      catch(e){ /* ниже — обычные пути */ }
+    }
+  }
   if(state.defPlayer==='builtin' || !canVlc()){
-    if(state.defPlayer==='vlc' && !canVlc()) toast('В этом браузере VLC недоступен · включаю встроенный плеер');
+    if(state.defPlayer==='vlc' && !canVlc() && !lampaBridge()) toast('В этом браузере VLC недоступен · включаю встроенный плеер');
     openPlayer(url, title); return;
   }
   vlcLaunch(url);
 }
 function vwAskPlayer(url, title, subs, mv, info){
+  if(state.defPlayer==='ask' && lampaBridge()){ playUrl(url, title); return; }
   if(!canVlc()){ openPlayer(url, title); return; }
   if(state.defPlayer==='vlc'){ playUrl(url, title); return; }
   if(state.defPlayer==='builtin'){ openPlayer(url, title); return; }
@@ -2308,7 +2316,7 @@ function vwTorRender(){
   let topIdx = -1, topScore = -1;
   arr.forEach(t=>{ const s = torScore(t); if(s>topScore){ topScore = s; topIdx = torCache.indexOf(t); } });
   const best = topIdx>=0 ? torCache[topIdx] : null;
-  vwSetWatch(best ? 'Лучшая раздача'+(canVlc() && state.defPlayer!=='builtin' ? ' · VLC' : '') : null, best ? ()=>playTorrentNow(best, m) : null);
+  vwSetWatch(best ? 'Лучшая раздача'+((lampaBridge()||canVlc()) && state.defPlayer!=='builtin' ? ' · VLC' : '') : null, best ? ()=>playTorrentNow(best, m) : null);
   vwSetSub(`${arr.length} ${plural(arr.length,'раздача','раздачи','раздач')}${torLastQ?` · <b>${escTx(torLastQ)}</b>`:''}`);
   const el = $('#vwList'); if(!el) return;
   el.innerHTML = `<div class="vw-list">` + arr.map(t=>{
@@ -2362,6 +2370,16 @@ function vlcIntent(u){
    на нём сразу используем встроенный плеер. */
 function canVlc(){
   try{ return /Android/i.test(navigator.userAgent||''); }catch(e){ return false; }
+}
+/* Мост в нативное приложение Lampa: «КиноTV» может работать внутри Lampa
+   (в стартовом экране вместо адреса сервера Lampa введён наш адрес) —
+   тогда видео открываем нативно через её мост, как делает сама Lampa
+   (там свой выбор плеера — у Denis это VLC). */
+function lampaBridge(){
+  try{
+    const A = window.Android;
+    return (A && typeof A.openPlayer==='function') ? A : null;
+  }catch(e){ return null; }
 }
 /* Запуск VLC — как у Lampa: прямой переход по intent://.
    Важно: вызывать СИНХРОННО в обработчике клика — без жеста пользователя
